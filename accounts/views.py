@@ -99,7 +99,7 @@ def user_login(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                messages.success(request, f'Ласкаво просимо, {user.full_name}!')
+                messages.success(request, f'Ласкаво просимо, {user.first_name} {user.last_name}!')
                 return redirect('accounts:profile')
     else:
         # Встановлюємо маркер, що користувач на сторінці входу
