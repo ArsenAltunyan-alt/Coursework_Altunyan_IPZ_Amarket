@@ -1,0 +1,147 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Реєстрація - Крок 2{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-container {
+        margin-bottom: 2rem;
+    }
+
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .progress-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gray-light);
+        z-index: -1;
+    }
+
+    .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--white);
+        border: 4px solid var(--gray-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .step-circle.active {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-color: var(--primary);
+        color: var(--white);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .step-circle.completed {
+        background: var(--success);
+        border-color: var(--success);
+        color: var(--white);
+    }
+
+    .step-label {
+        font-size: 0.875rem;
+        color: var(--gray);
+        font-weight: 500;
+    }
+
+    .step-label.active {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .step-label.completed {
+        color: var(--success);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .button-group button {
+        flex: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 20px;">
+                <div class="progress-container">
+                    <div class="progress-steps">
+                        <div class="progress-step">
+                            <div class="step-circle completed">✓</div>
+                            <span class="step-label completed">Основна інформація</span>
+                        </div>
+                        <div class="progress-step">
+                            <div class="step-circle active">2</div>
+                            <span class="step-label active">Місто</span>
+                        </div>
+                        <div class="progress-step">
+                            <div class="step-circle">3</div>
+                            <span class="step-label">Фото</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-center mb-1">Оберіть ваше місто</h2>
+                <p class="text-center mb-4" style="color: var(--gray);">Крок 2 з 3: Це допоможе нам показувати
+                    релевантні пропозиції</p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="form-group mb-4">
+                        <label class="form-label">{{ form.city.label }}</label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                        {% for error in form.city.errors %}
+                        <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                        {% endif %}
+                        <small style="color: var(--gray); display: block; margin-top: 0.5rem;">
+                            Це поле необов'язкове. Ви можете пропустити цей крок.
+                        </small>
+                    </div>
+
+                    <div class="button-group d-flex gap-3 mt-4">
+                        <button type="submit" name="skip"
+                            class="btn btn-outline-secondary rounded-pill flex-grow-1 py-3">
+                            Пропустити
+                        </button>
+                        <button type="submit" class="btn btn-primary rounded-pill flex-grow-1 py-3">
+                            Продовжити →
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Реєстрація - Крок 3{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-container {
+        margin-bottom: 2rem;
+    }
+
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .progress-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gray-light);
+        z-index: -1;
+    }
+
+    .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--white);
+        border: 4px solid var(--gray-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .step-circle.active {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-color: var(--primary);
+        color: var(--white);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .step-circle.completed {
+        background: var(--success);
+        border-color: var(--success);
+        color: var(--white);
+    }
+
+    .step-label {
+        font-size: 0.875rem;
+        color: var(--gray);
+        font-weight: 500;
+    }
+
+    .step-label.active {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .step-label.completed {
+        color: var(--success);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .button-group button {
+        flex: 1;
+    }
+
+    .file-upload-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .file-upload-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        border: 2px dashed var(--gray-light);
+        border-radius: 12px;
+        background: var(--light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        color: var(--gray);
+    }
+
+    .file-upload-label:hover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+        color: var(--primary);
+    }
+
+    .file-upload-label.has-file {
+        border-color: var(--success);
+        background: rgba(16, 185, 129, 0.05);
+        color: var(--success);
+    }
+
+    input[type="file"] {
+        position: absolute;
+        left: -9999px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 20px;">
+                <div class="progress-container">
+                    <div class="progress-steps">
+                        <div class="progress-step">
+                            <div class="step-circle completed">✓</div>
+                            <span class="step-label completed">Основна інформація</span>
+                        </div>
+                        <div class="progress-step">
+                            <div class="step-circle completed">✓</div>
+                            <span class="step-label completed">Місто</span>
+                        </div>
+                        <div class="progress-step">
+                            <div class="step-circle active">3</div>
+                            <span class="step-label active">Фото</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-center mb-1">Завантажте фото профілю</h2>
+                <p class="text-center mb-4" style="color: var(--gray);">Крок 3 з 3: Останній крок!</p>
+
+                <form method="post" enctype="multipart/form-data" novalidate id="uploadForm">
+                    {% csrf_token %}
+
+                    <div class="form-group mb-4">
+                        <label for="id_profile_photo"
+                            class="file-upload-label d-block text-center p-5 border-2 border-dashed bg-light rounded-3 cursor-pointer"
+                            id="fileLabel" style="border-style: dashed; cursor: pointer;">
+                            <div>
+                                <div style="font-size: 3rem; margin-bottom: 0.5rem;">📸</div>
+                                <div style="font-weight: 600;">Натисніть, щоб обрати фото</div>
+                                <div style="font-size: 0.875rem; margin-top: 0.5rem;" class="text-muted">або перетягніть
+                                    файл сюди</div>
+                            </div>
+                        </label>
+                        {{ form.profile_photo }}
+                        {% if form.profile_photo.errors %}
+                        {% for error in form.profile_photo.errors %}
+                        <span class="form-error text-danger d-block mt-2">{{ error }}</span>
+                        {% endfor %}
+                        {% endif %}
+                        <small style="color: var(--gray); display: block; margin-top: 0.5rem;">
+                            Це поле необов'язкове. Ви можете додати фото пізніше в профілі.
+                        </small>
+                    </div>
+
+                    <div class="button-group d-flex gap-3 mt-4">
+                        <button type="submit" name="skip"
+                            class="btn btn-outline-secondary rounded-pill flex-grow-1 py-3">
+                            Пропустити
+                        </button>
+                        <button type="submit" class="btn btn-primary rounded-pill flex-grow-1 py-3">
+                            Завершити реєстрацію ✓
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const fileInput = document.getElementById('id_profile_photo');
+    const fileLabel = document.getElementById('fileLabel');
+
+    fileInput.addEventListener('change', function (e) {
+        if (this.files && this.files[0]) {
+            const fileName = this.files[0].name;
+            fileLabel.innerHTML = `
+                <div>
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">✓</div>
+                    <div style="font-weight: 600;">Файл обрано</div>
+                    <div style="font-size: 0.875rem; margin-top: 0.5rem;">${fileName}</div>
+                </div>
+            `;
+            fileLabel.classList.add('has-file');
+        }
+    });
+</script>
+{% endblock %}
