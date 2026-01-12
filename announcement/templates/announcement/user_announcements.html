@@ -1,0 +1,46 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Мої оголошення</h2>
+    <div class="row">
+        {% for announcement in announcements %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm {% if not announcement.is_active %}border-warning bg-light{% endif %}">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {{ announcement.title }}
+                        {% if not announcement.is_active %}
+                        <span class="badge bg-warning text-dark">Архівовано</span>
+                        {% endif %}
+                    </h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ announcement.price|default:"Без ціни" }}
+                        {% if announcement.price %}UAH{% endif %}
+                    </h6>
+                    <p class="card-text">{{ announcement.description|truncatewords:20 }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'announcement:edit' announcement.pk %}"
+                            class="btn btn-sm btn-outline-primary">Редагувати</a>
+                        <a href="{% url 'announcement:archive' announcement.pk %}"
+                            class="btn btn-sm btn-outline-warning">
+                            {% if announcement.is_active %}Архівувати{% else %}Відновити{% endif %}
+                        </a>
+                        <a href="{% url 'announcement:delete' announcement.pk %}" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Ви впевнені?');">Видалити</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                У вас немає оголошень. <a href="{% url 'announcement:create' %}">Створити перше!</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

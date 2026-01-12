@@ -1,0 +1,13 @@
+from django.urls import path
+from . import views
+
+app_name = 'announcement'
+
+urlpatterns = [
+    path('create/', views.create_announcement, name='create'),
+    path('list/', views.announcement_list, name='list'),
+    path('my/', views.user_announcements, name='user_list'),
+    path('edit/<int:pk>/', views.edit_announcement, name='edit'),
+    path('archive/<int:pk>/', views.archive_announcement, name='archive'),
+    path('delete/<int:pk>/', views.delete_announcement, name='delete'),
+]

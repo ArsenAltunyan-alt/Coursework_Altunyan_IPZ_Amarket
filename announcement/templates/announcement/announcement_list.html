@@ -1,0 +1,68 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Оголошення</h2>
+    <div class="row">
+        {% for announcement in announcements %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                {# Image Banner #}
+                {% with main_image=announcement.get_main_image %}
+                {% if main_image %}
+                <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
+                    style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
+                    style="height: 200px;">
+                    <span>Немає фото</span>
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <div class="card-body">
+                    <h5 class="card-title">{{ announcement.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ announcement.price|default:"Без ціни" }}
+                        {% if announcement.price %}UAH{% endif %}
+                    </h6>
+                    {% if announcement.is_negotiable %}
+                    <span class="badge bg-success mb-2">Торг можливий</span>
+                    {% endif %}
+                    <p class="card-text">{{ announcement.description|truncatewords:20 }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <i class="bi bi-geo-alt"></i>
+                            {{ announcement.address }}
+                        </small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex align-items-center">
+                        <div class="ms-0">
+                            <p class="mb-0 small fw-bold">Продавець: {{ announcement.seller.username }}</p>
+                            <p class="mb-0 small text-muted">
+                                {% if announcement.seller.first_name or announcement.seller.last_name %}
+                                {{ announcement.seller.first_name }} {{ announcement.seller.last_name }}
+                                {% else %}
+                                (Ім'я не вказано)
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        Опубліковано: {{ announcement.created_at|date:"d.m.Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                Ще немає оголошень. <a href="{% url 'announcement:create' %}">Створити перше!</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

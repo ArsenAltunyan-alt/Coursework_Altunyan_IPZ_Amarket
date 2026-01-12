@@ -1,0 +1,116 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg mt-5">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="text-center font-weight-light my-4">Створити оголошення</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="announcementForm">
+                        {% csrf_token %}
+
+                        {# Main Form Fields #}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="text-danger">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        {# Image Upload Section #}
+                        <div class="mb-3">
+                            <label class="form-label">{{ image_form.images.label }}</label>
+                            {{ image_form.images }}
+                            {% if image_form.images.errors %}
+                            <div class="text-danger">
+                                {% for error in image_form.images.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div id="image-preview" class="row mt-3"></div>
+                            {{ image_form.main_image_index }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Опублікувати</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('id_images').addEventListener('change', function (event) {
+        const previewContainer = document.getElementById('image-preview');
+        previewContainer.innerHTML = ''; // Clear existing previews
+        const mainImageIndexInput = document.getElementById('id_main_image_index');
+
+        const files = event.target.files;
+
+        if (files.length > 10) {
+            alert('Максимум 10 фотографій!');
+            this.value = ''; // Clear input
+            return;
+        }
+
+        Array.from(files).forEach((file, index) => {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 mb-2 position-relative text-center';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'img-thumbnail';
+                img.style.height = '100px';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.title = 'Натисніть, щоб зробити головним';
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'main_selection';
+                radio.className = 'form-check-input position-absolute top-0 start-0 m-1';
+                radio.value = index;
+                if (index === 0) radio.checked = true; // Default to first
+
+                // Clicking image selects radio
+                img.onclick = function () {
+                    radio.checked = true;
+                    mainImageIndexInput.value = index;
+                };
+
+                radio.onchange = function () {
+                    if (this.checked) mainImageIndexInput.value = index;
+                }
+
+                col.appendChild(img);
+                col.appendChild(radio);
+                previewContainer.appendChild(col);
+            }
+
+            reader.readAsDataURL(file);
+        });
+
+        // Reset main index to 0 on new selection
+        mainImageIndexInput.value = 0;
+    });
+</script>
+{% endblock %}
