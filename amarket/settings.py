@@ -35,6 +35,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
     'accounts',
     'main',
     'announcement',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +85,14 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = 'amarket.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 WSGI_APPLICATION = 'amarket.wsgi.application'
 
