@@ -9,6 +9,15 @@ class Announcement(models.Model):
     is_negotiable = models.BooleanField(default=False, verbose_name='Можливість торгу')
     address = models.CharField(max_length=255, verbose_name='Адреса')
     is_active = models.BooleanField(default=True, verbose_name='Активне')
+    views_count = models.PositiveIntegerField(default=0, verbose_name='Переглядів')
+    
+    CONDITION_CHOICES = [
+        ('new', 'Новий'),
+        ('used', 'Б/В'),
+    ]
+    condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, null=True, blank=True, verbose_name='Стан')
+    category = models.ForeignKey('Category', on_delete=models.PROTECT, related_name='announcements', verbose_name='Категорія', null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,6 +33,18 @@ class Announcement(models.Model):
     class Meta:
         verbose_name = 'Оголошення'
         verbose_name_plural = 'Оголошення'
+
+class Category(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Назва')
+    slug = models.SlugField(unique=True, verbose_name='Slug')
+    requires_condition = models.BooleanField(default=True, verbose_name='Потребує вказання стану')
+
+    class Meta:
+        verbose_name = 'Категорія'
+        verbose_name_plural = 'Категорії'
+
+    def __str__(self):
+        return self.name
 
 class AnnouncementImage(models.Model):
     announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE, related_name='images')

@@ -2,67 +2,145 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Оголошення</h2>
     <div class="row">
-        {% for announcement in announcements %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm">
-                {# Image Banner #}
-                {% with main_image=announcement.get_main_image %}
-                {% if main_image %}
-                <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
-                    style="height: 200px; object-fit: cover;">
-                {% else %}
-                <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
-                    style="height: 200px;">
-                    <span>Немає фото</span>
-                </div>
-                {% endif %}
-                {% endwith %}
-
+        {# Sidebar Filters #}
+        <div class="col-md-3">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">Фільтри</div>
                 <div class="card-body">
-                    <h5 class="card-title">{{ announcement.title }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ announcement.price|default:"Без ціни" }}
-                        {% if announcement.price %}UAH{% endif %}
-                    </h6>
-                    {% if announcement.is_negotiable %}
-                    <span class="badge bg-success mb-2">Торг можливий</span>
-                    {% endif %}
-                    <p class="card-text">{{ announcement.description|truncatewords:20 }}</p>
-                    <p class="card-text">
-                        <small class="text-muted">
-                            <i class="bi bi-geo-alt"></i>
-                            {{ announcement.address }}
-                        </small>
-                    </p>
-                </div>
-                <div class="card-footer bg-transparent border-top-0">
-                    <div class="d-flex align-items-center">
-                        <div class="ms-0">
-                            <p class="mb-0 small fw-bold">Продавець: {{ announcement.seller.username }}</p>
-                            <p class="mb-0 small text-muted">
-                                {% if announcement.seller.first_name or announcement.seller.last_name %}
-                                {{ announcement.seller.first_name }} {{ announcement.seller.last_name }}
-                                {% else %}
-                                (Ім'я не вказано)
+                    <form method="GET" action="{% url 'announcement:list' %}">
+                        {# Categories #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Категорії</label>
+                            <div class="list-group">
+                                <a href="{% url 'announcement:list' %}"
+                                    class="list-group-item list-group-item-action {% if not request.GET.category %}active{% endif %}">
+                                    Всі категорії
+                                </a>
+                                {% for category in categories %}
+                                <a href="?category={{ category.slug }}"
+                                    class="list-group-item list-group-item-action {% if request.GET.category == category.slug %}active{% endif %}">
+                                    {{ category.name }}
+                                </a>
+                                {% endfor %}
+                                {# Hidden input to keep category selected if form submitted #}
+                                {% if request.GET.category %}
+                                <input type="hidden" name="category" value="{{ request.GET.category }}">
                                 {% endif %}
-                            </p>
+                            </div>
+                        </div>
+
+                        {# Price Filter #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ціна (UAH)</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" name="min_price" class="form-control" placeholder="Від"
+                                        value="{{ request.GET.min_price }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" name="max_price" class="form-control" placeholder="До"
+                                        value="{{ request.GET.max_price }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Condition Filter #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Стан</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="condition" id="condAny" value="" {% if not request.GET.condition %}checked{% endif %}>
+                                <label class="form-check-label" for="condAny">Будь-який</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="condition" id="condNew" value="new"
+                                    {% if request.GET.condition == 'new' %}checked{% endif %}>
+                                <label class="form-check-label" for="condNew">Новий</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="condition" id="condUsed" value="used"
+                                    {% if request.GET.condition == 'used' %}checked{% endif %}>
+                                <label class="form-check-label" for="condUsed">Б/В</label>
+                            </div>
+                        </div>
+
+                        {# Negotiation Filter #}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_negotiable" id="isNegotiable"
+                                    {% if request.GET.is_negotiable %}checked{% endif %}>
+                                <label class="form-check-label" for="isNegotiable">Можливий торг</label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Застосувати</button>
+                            <a href="{% url 'announcement:list' %}"
+                                class="btn btn-link text-decoration-none mt-2">Скинути</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# Announcements List #}
+        <div class="col-md-9">
+            <h2 class="mb-4">Оголошення</h2>
+
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for announcement in announcements %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        {# Image Banner #}
+                        {% with main_image=announcement.get_main_image %}
+                        <a href="{% url 'announcement:detail' announcement.pk %}"
+                            class="text-decoration-none text-dark">
+                            {% if main_image %}
+                            <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
+                                style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
+                                style="height: 200px;">
+                                <span>Немає фото</span>
+                            </div>
+                            {% endif %}
+                        </a>
+                        {% endwith %}
+
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'announcement:detail' announcement.pk %}"
+                                    class="text-decoration-none text-dark">
+                                    {{ announcement.title }}
+                                </a>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                {{ announcement.price|default:"Без ціни" }}
+                                {% if announcement.price %}UAH{% endif %}
+                            </h6>
+                            <p class="card-text text-truncate">{{ announcement.description }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 small text-muted">
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:15 }}</span>
+                                <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                            {% if announcement.category %}
+                            <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.name }}</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    <small class="text-muted d-block mt-2">
-                        Опубліковано: {{ announcement.created_at|date:"d.m.Y H:i" }}
-                    </small>
                 </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        Оголошень не знайдено.
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                Ще немає оголошень. <a href="{% url 'announcement:create' %}">Створити перше!</a>
-            </div>
-        </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}

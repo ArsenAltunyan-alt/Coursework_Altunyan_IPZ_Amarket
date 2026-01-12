@@ -4,9 +4,11 @@ from .models import Announcement
 class AnnouncementForm(forms.ModelForm):
     class Meta:
         model = Announcement
-        fields = ['title', 'description', 'price', 'is_negotiable', 'address']
+        fields = ['title', 'category', 'condition', 'description', 'price', 'is_negotiable', 'address']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Назва оголошення'}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'condition': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Опис оголошення', 'rows': 5}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ціна (необов\'язково)'}),
             'is_negotiable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

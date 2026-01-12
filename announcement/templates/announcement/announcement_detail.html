@@ -1,0 +1,149 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        {# Main Content (Left Column) #}
+        <div class="col-lg-8">
+            {# Image Carousel #}
+            <div id="announcementCarousel" class="carousel slide bg-light rounded overflow-hidden mb-4"
+                data-bs-ride="carousel"
+                style="min-height: 400px; max-height: 600px; display: flex; align-items: center; justify-content: center;">
+                <div class="carousel-inner">
+                    {% for image in announcement.images.all %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}" style="max-height: 600px;">
+                        <img src="{{ image.image.url }}" class="d-block w-100" alt="Image for {{ announcement.title }}"
+                            style="object-fit: contain; max-height: 600px;">
+                    </div>
+                    {% empty %}
+                    <div class="carousel-item active">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="height: 400px; background-color: #f8f9fa;">
+                            <span class="text-muted">Немає фото</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if announcement.images.count > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#announcementCarousel"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon bg-dark rounded-circle p-3" aria-hidden="true"
+                        style="opacity: 0.5;"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#announcementCarousel"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon bg-dark rounded-circle p-3" aria-hidden="true"
+                        style="opacity: 0.5;"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                {% endif %}
+            </div>
+
+            {# Badges / Status #}
+            <div class="mb-4">
+                <p class="text-muted small mb-2">Опубліковано {{ announcement.created_at|date:"d E Y" }} р.</p>
+                <h1 class="mb-3">{{ announcement.title }}</h1>
+                <h2 class="fw-bold mb-3">
+                    {{ announcement.price|default:"Договірна" }}
+                    {% if announcement.price %}грн.{% endif %}
+                    {% if announcement.is_negotiable %}
+                    <small class="text-muted fs-6 fw-normal">Торг можливий</small>
+                    {% endif %}
+                </h2>
+            </div>
+
+            {# Attributes/Tags #}
+            <div class="card mb-4 border-0 bg-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Тип:</strong> {{ announcement.category.name }}
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Стан:</strong> {{ announcement.get_condition_display|default:"-" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Description #}
+            <div class="mb-5">
+                <h3 class="fw-bold mb-3">ОПИС</h3>
+                <p class="fs-5" style="white-space: pre-line;">{{ announcement.description }}</p>
+            </div>
+
+            <hr>
+            <div class="d-flex justify-content-between text-muted small">
+                <span>ID: {{ announcement.id }}</span>
+                <span>Переглядів: {{ announcement.views_count }}</span>
+                <a href="#" class="text-danger text-decoration-none"><i class="bi bi-flag"></i> Поскаржитися</a>
+            </div>
+
+        </div>
+
+        {# Sidebar (Right Column) #}
+        <div class="col-lg-4">
+            {# User Card #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small mb-3">КОРИСТУВАЧ</h6>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            {% if announcement.seller.profile_photo %}
+                            <img src="{{ announcement.seller.profile_photo.url }}" class="rounded-circle" width="60"
+                                height="60" alt="{{ announcement.seller.username }}">
+                            {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white"
+                                style="width: 60px; height: 60px; font-size: 24px;">
+                                {{ announcement.seller.username|first|upper }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="mb-0 fw-bold">
+                                {% if announcement.seller.first_name %}
+                                {{ announcement.seller.first_name }} {{ announcement.seller.last_name }}
+                                {% else %}
+                                {{ announcement.seller.username }}
+                                {% endif %}
+                            </h5>
+                            <small class="text-muted">на сайті з {{ announcement.seller.date_joined|date:"F Y" }}
+                                р.</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-dark btn-lg">Повідомлення</button>
+                        <button class="btn btn-outline-dark btn-lg">Показати телефон</button>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="#" class="text-decoration-none">Усі оголошення автора <i
+                                class="bi bi-chevron-right"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            {# Location Card #}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small mb-3">МІСЦЕЗНАХОДЖЕННЯ</h6>
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-geo-alt-fill text-dark fs-4 me-2"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ announcement.address }}</h6>
+                            <small class="text-muted">Полтавська область</small>
+                        </div>
+                    </div>
+                    {# Map Placeholder #}
+                    <div class="bg-light mt-3 rounded d-flex align-items-center justify-content-center"
+                        style="height: 100px;">
+                        <span class="text-muted">Карта</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
