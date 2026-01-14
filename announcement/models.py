@@ -11,6 +11,10 @@ class Announcement(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='Активне')
     views_count = models.PositiveIntegerField(default=0, verbose_name='Переглядів')
     
+    # Geolocation
+    latitude = models.FloatField(null=True, blank=True, verbose_name='Широта')
+    longitude = models.FloatField(null=True, blank=True, verbose_name='Довгота')
+    
     CONDITION_CHOICES = [
         ('new', 'Новий'),
         ('used', 'Б/В'),

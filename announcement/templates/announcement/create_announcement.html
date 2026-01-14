@@ -1,4 +1,19 @@
 {% extends 'main/base.html' %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -14,9 +29,23 @@
 
                         {# Main Form Fields #}
                         {% for field in form %}
+                        {% if not field.is_hidden %}
                         <div class="mb-3">
                             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+
+                            {% if field.name == 'address' %}
+                            <div class="input-group mb-2">
+                                {{ field }}
+                                <button class="btn btn-outline-secondary" type="button" id="search-address-btn">Знайти
+                                    на карті</button>
+                            </div>
+                            <div id="map"></div>
+                            <small class="text-muted d-block mb-2">Клікніть на карті, щоб встановити точне
+                                місцезнаходження, або введіть адресу і натисніть "Знайти"</small>
+                            {% else %}
                             {{ field }}
+                            {% endif %}
+
                             {% if field.help_text %}
                             <div class="form-text">{{ field.help_text }}</div>
                             {% endif %}
@@ -28,6 +57,9 @@
                             </div>
                             {% endif %}
                         </div>
+                        {% else %}
+                        {{ field }}
+                        {% endif %}
                         {% endfor %}
 
                         {# Image Upload Section #}
@@ -56,6 +88,7 @@
 </div>
 
 <script>
+    // Image handling script
     document.getElementById('id_images').addEventListener('change', function (event) {
         const previewContainer = document.getElementById('image-preview');
         previewContainer.innerHTML = ''; // Clear existing previews
@@ -89,9 +122,7 @@
                 radio.name = 'main_selection';
                 radio.className = 'form-check-input position-absolute top-0 start-0 m-1';
                 radio.value = index;
-                if (index === 0) radio.checked = true; // Default to first
-
-                // Clicking image selects radio
+                if (index === 0) radio.checked = true; 
                 img.onclick = function () {
                     radio.checked = true;
                     mainImageIndexInput.value = index;
@@ -111,6 +142,98 @@
 
         // Reset main index to 0 on new selection
         mainImageIndexInput.value = 0;
+    });
+
+    // --- Leaflet Map Logic ---
+    document.addEventListener('DOMContentLoaded', function () {
+        // Default coordinates (Ukraine center roughly, or Kyiv)
+        const defaultLat = 50.4501;
+        const defaultLng = 30.5234;
+
+        let mapOptions = {
+            center: [defaultLat, defaultLng],
+            zoom: 13
+        };
+
+        const map = L.map('map', mapOptions);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let marker = null;
+        const latInput = document.getElementById('id_latitude');
+        const lngInput = document.getElementById('id_longitude');
+        const addressInput = document.getElementById('address-input');
+
+        // Check if we already have values (e.g., editing or validation error)
+        if (latInput.value && lngInput.value) {
+            const savedLat = parseFloat(latInput.value);
+            const savedLng = parseFloat(lngInput.value);
+            marker = L.marker([savedLat, savedLng]).addTo(map);
+            map.setView([savedLat, savedLng], 13);
+        }
+
+        // Click on map to set marker
+        map.on('click', function (e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+
+            latInput.value = lat;
+            lngInput.value = lng;
+
+            // Reverse geocoding (Nominatim)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept_language=uk`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        // Try to get a cleaner address if possible, or just use display_name
+                        let address = data.display_name;
+                        // Sometimes Nominatim returns very long strings.
+                        addressInput.value = address;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Search by address button
+        const searchBtn = document.getElementById('search-address-btn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', function () {
+                const query = addressInput.value;
+                if (!query) return;
+
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept_language=uk`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lat = parseFloat(data[0].lat);
+                            const lng = parseFloat(data[0].lon);
+
+                            const newLatLng = new L.LatLng(lat, lng);
+
+                            if (marker) {
+                                marker.setLatLng(newLatLng);
+                            } else {
+                                marker = L.marker(newLatLng).addTo(map);
+                            }
+
+                            map.setView(newLatLng, 13);
+                            latInput.value = lat;
+                            lngInput.value = lng;
+                        } else {
+                            alert('Адресу не знайдено');
+                        }
+                    })
+                    .catch(error => console.error('Error searching address:', error));
+            });
+        }
     });
 </script>
 {% endblock %}

@@ -155,7 +155,7 @@
                     <div class="collapse navbar-collapse" id="navbarCollapse">
                         <div class="navbar-nav ms-auto py-0">
                             <a href="{% url 'home' %}" class="nav-item nav-link active">Головна</a>
-                            <a href="#" class="nav-item nav-link">Магазин</a>
+                            <a href="{% url 'announcement:list' %}" class="nav-item nav-link">Оголошення</a>
                             {% if user.is_authenticated %}
                             <a href="{% url 'accounts:profile' %}" class="nav-item nav-link">Профіль</a>
                             {% endif %}

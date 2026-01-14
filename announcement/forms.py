@@ -4,7 +4,7 @@ from .models import Announcement
 class AnnouncementForm(forms.ModelForm):
     class Meta:
         model = Announcement
-        fields = ['title', 'category', 'condition', 'description', 'price', 'is_negotiable', 'address']
+        fields = ['title', 'category', 'condition', 'description', 'price', 'is_negotiable', 'address', 'latitude', 'longitude']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Назва оголошення'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
@@ -12,7 +12,9 @@ class AnnouncementForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Опис оголошення', 'rows': 5}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ціна (необов\'язково)'}),
             'is_negotiable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Адреса'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Адреса', 'id': 'address-input'}),
+            'latitude': forms.HiddenInput(attrs={'id': 'id_latitude'}),
+            'longitude': forms.HiddenInput(attrs={'id': 'id_longitude'}),
         }
 
 class MultipleFileInput(forms.FileInput):
