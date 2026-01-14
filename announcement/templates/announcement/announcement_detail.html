@@ -131,7 +131,10 @@
 
                     <div class="d-grid gap-2">
                         <button class="btn btn-dark btn-lg">Повідомлення</button>
-                        <button class="btn btn-outline-dark btn-lg">Показати телефон</button>
+                        <button class="btn btn-outline-dark btn-lg"
+                            onclick="this.textContent='{{ announcement.seller.phone_number|default:'Номер не вказано' }}'">
+                            Показати телефон
+                        </button>
                     </div>
                     <div class="mt-3 text-center">
                         <a href="#" class="text-decoration-none">Усі оголошення автора <i
