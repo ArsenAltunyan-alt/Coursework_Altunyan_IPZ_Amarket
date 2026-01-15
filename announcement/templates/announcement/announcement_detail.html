@@ -130,7 +130,13 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button class="btn btn-dark btn-lg">Повідомлення</button>
+                        {% if user.is_authenticated and user != announcement.seller %}
+                        <a class="btn btn-dark btn-lg"
+                            href="{% url 'chat:start' announcement.seller.username %}">Повідомлення</a>
+                        {% elif not user.is_authenticated %}
+                        <a class="btn btn-dark btn-lg"
+                            href="{% url 'accounts:login' %}?next={{ request.path }}">Повідомлення</a>
+                        {% endif %}
                         <button class="btn btn-outline-dark btn-lg"
                             onclick="this.textContent='{{ announcement.seller.phone_number|default:'Номер не вказано' }}'">
                             Показати телефон

@@ -159,7 +159,7 @@
                             {% if user.is_authenticated %}
                             <a href="{% url 'accounts:profile' %}" class="nav-item nav-link">Профіль</a>
                             {% endif %}
-                            <a href="#" class="nav-item nav-link me-2">Контакти</a>
+                            <a href="{% url 'chat:index' %}" class="nav-item nav-link me-2">Мої повідомлення</a>
                         </div>
                         <a href="{% url 'announcement:create' %}"
                             class="btn btn-secondary rounded-pill py-2 px-4 px-lg-3 mb-3 mb-md-3 mb-lg-0"><i
