@@ -126,6 +126,11 @@ def announcement_list(request):
     category_slug = request.GET.get('category')
     if category_slug:
         announcements = announcements.filter(category__slug=category_slug)
+
+    # Filter by Seller
+    seller_username = request.GET.get('seller')
+    if seller_username:
+        announcements = announcements.filter(seller__username=seller_username)
     
     # Filter by Price
     min_price = request.GET.get('min_price')
