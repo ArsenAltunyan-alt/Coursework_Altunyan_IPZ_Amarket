@@ -65,7 +65,24 @@
             {# Badges / Status #}
             <div class="mb-4">
                 <p class="text-muted small mb-2">Опубліковано {{ announcement.created_at|date:"d E Y" }} р.</p>
-                <h1 class="mb-3">{{ announcement.title }}</h1>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h1 class="mb-0">{{ announcement.title }}</h1>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}"
+                        class="text-decoration-none">
+                        {% if announcement.id in favorite_ids %}
+                        <i class="fas fa-heart text-danger fs-4"></i>
+                        {% else %}
+                        <i class="far fa-heart text-muted fs-4"></i>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <a href="{% url 'accounts:login' %}?next={% url 'announcement:detail' announcement.pk %}"
+                        class="text-decoration-none">
+                        <i class="far fa-heart text-muted fs-4"></i>
+                    </a>
+                    {% endif %}
+                </div>
                 <h2 class="fw-bold mb-3">
                     {{ announcement.price|default:"Договірна" }}
                     {% if announcement.price %}грн.{% endif %}
@@ -99,7 +116,7 @@
             <div class="d-flex justify-content-between text-muted small">
                 <span>ID: {{ announcement.id }}</span>
                 <span>Переглядів: {{ announcement.views_count }}</span>
-                <a href="#" class="text-danger text-decoration-none"><i class="bi bi-flag"></i> Поскаржитися</a>
+                <span class="text-muted"><i class="fas fa-heart text-danger me-1"></i>Кількість доданих в обране: {{ announcement.favorites.count }}</span>
             </div>
 
         </div>

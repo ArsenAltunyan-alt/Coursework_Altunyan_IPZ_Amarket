@@ -3,6 +3,7 @@ from django.conf import settings
 
 class Announcement(models.Model):
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='announcements')
+    favorites = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='favorite_announcements', blank=True)
     title = models.CharField(max_length=255, verbose_name='Назва')
     description = models.TextField(verbose_name='Опис')
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Ціна')

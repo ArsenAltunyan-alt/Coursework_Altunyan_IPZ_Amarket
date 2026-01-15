@@ -66,9 +66,16 @@ def announcement_detail(request, pk):
     Announcement.objects.filter(pk=pk).update(views_count=F('views_count') + 1)
     # Reload for template to show new count
     announcement.refresh_from_db()
-    
+
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(
+            request.user.favorite_announcements.values_list('id', flat=True)
+        )
+
     return render(request, 'announcement/announcement_detail.html', {
         'announcement': announcement,
+        'favorite_ids': favorite_ids,
     })
 
 @login_required
@@ -138,8 +145,40 @@ def announcement_list(request):
     if is_negotiable == 'on':
         announcements = announcements.filter(is_negotiable=True)
 
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(
+            request.user.favorite_announcements.values_list('id', flat=True)
+        )
+
     context = {
         'announcements': announcements,
         'categories': categories,
+        'favorite_ids': favorite_ids,
     }
     return render(request, 'announcement/announcement_list.html', context)
+
+@login_required
+def favorites_list(request):
+    announcements = Announcement.objects.filter(
+        favorites=request.user,
+        is_active=True,
+    ).order_by('-created_at')
+    return render(request, 'announcement/favorite_list.html', {
+        'announcements': announcements,
+    })
+
+@login_required
+def toggle_favorite(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
+    if announcement.favorites.filter(pk=request.user.pk).exists():
+        announcement.favorites.remove(request.user)
+        messages.success(request, 'Оголошення видалено з обраного.')
+    else:
+        announcement.favorites.add(request.user)
+        messages.success(request, 'Оголошення додано до обраного.')
+
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('announcement:detail', pk=announcement.pk)

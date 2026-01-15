@@ -1,0 +1,64 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <h2 class="mb-4">Обране</h2>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for announcement in announcements %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                {% with main_image=announcement.get_main_image %}
+                <a href="{% url 'announcement:detail' announcement.pk %}" class="text-decoration-none text-dark">
+                    {% if main_image %}
+                    <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
+                        style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
+                        style="height: 200px;">
+                        <span></span>
+                    </div>
+                    {% endif %}
+                </a>
+                {% endwith %}
+
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title mb-0">
+                            <a href="{% url 'announcement:detail' announcement.pk %}"
+                                class="text-decoration-none text-dark">
+                                {{ announcement.title }}
+                            </a>
+                        </h5>
+                        <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}"
+                            class="text-decoration-none">
+                            <i class="fas fa-heart text-danger"></i>
+                        </a>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ announcement.price|default:"Ціна не вказана" }}
+                        {% if announcement.price %}UAH{% endif %}
+                    </h6>
+                    <p class="card-text text-truncate">{{ announcement.description }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 small text-muted">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:15 }}</span>
+                        <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
+                    </div>
+                    {% if announcement.category %}
+                    <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.name }}</span></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                У вас поки не має жодного обраного оголошення.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
