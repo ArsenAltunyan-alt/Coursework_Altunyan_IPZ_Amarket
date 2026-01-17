@@ -102,7 +102,6 @@ def user_login(request):
                 messages.success(request, f'Ласкаво просимо, {user.first_name} {user.last_name}!')
                 return redirect('accounts:profile')
     else:
-        # Встановлюємо маркер, що користувач на сторінці входу
         request.session['social_login_action'] = 'login'
         form = CustomLoginForm()
     
@@ -141,3 +140,4 @@ def post_login_redirect(request):
         return redirect('accounts:register_step2')
 
     return redirect('accounts:profile')
+

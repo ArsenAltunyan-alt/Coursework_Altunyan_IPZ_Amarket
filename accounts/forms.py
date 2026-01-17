@@ -182,6 +182,5 @@ class ProfileUpdateForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Робимо всі поля необов'язковими для редагування
         for field in self.fields:
             self.fields[field].required = False
