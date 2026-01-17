@@ -1,0 +1,64 @@
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            {% if room_name %}
+            <img src="https://ui-avatars.com/api/?name={{ room_name|urlencode }}&size=64&background=random"
+                style="border-radius: 50%; width: 45px; height: 45px; object-fit: cover" />
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <form method="GET"
+                action="{% if room_name %}{% url 'chat:room' room_name %}{% endif %}"
+                hx-get="{% if room_name %}{% url 'chat:room' room_name %}{% endif %}"
+                hx-target="#chat-panel"
+                hx-swap="innerHTML"
+                hx-push-url="true">
+                <input type="text" name="search" id="searchInput"
+                    class="form-control form-control-sm" placeholder="Пошук повідомлень..."
+                    value="{{ search_query }}" {% if not room_name %}disabled{% endif %} />
+            </form>
+            {% if room_name %}
+            <a href="{% url 'chat:delete' room_name %}" class="btn btn-sm btn-outline-danger"
+                data-chat-delete>Видалити</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <input type="hidden" id="current-room" name="room" value="{{ room_name|default:'' }}">
+        <div id="chatbox" class="chatbox">
+            {% if not room_name %}
+            <p class="no-messages text-muted mb-0">Виберіть чат зі списку, щоб розпочати.</p>
+            {% elif chats %}
+            {% for message in chats %}
+            <div class="chat-message {% if message.sender == request.user %} sender {% else %} receiver {% endif %}">
+                <div class="message-bubble">
+                    <div class="message-text">{{ message.content }}</div>
+                    <div class="message-meta">
+                        <span>{{ message.timestamp|date:"H:i" }}</span>
+                        {% if message.sender == request.user %}
+                        <span class="read-status" data-message-id="{{ message.id }}">
+                            {% if message.is_read %}&#10003;&#10003;{% else %}&#10003;{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="no-messages text-muted mb-0">Поки що немає повідомлень.</p>
+            {% endif %}
+        </div>
+
+        <div class="chat-input">
+            <div class="input-group">
+                <input type="text" id="my_input" class="form-control"
+                    placeholder="Введіть повідомлення..." required
+                    {% if not room_name %}disabled{% endif %} />
+                <button id="submit_button" class="btn btn-primary" type="button"
+                    {% if not room_name %}disabled{% endif %}>
+                    Надіслати
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

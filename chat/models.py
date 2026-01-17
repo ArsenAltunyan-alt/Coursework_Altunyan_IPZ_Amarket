@@ -6,6 +6,8 @@ class Message(models.Model):
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="received_messages", on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.sender} -> {self.receiver}: {self.content[:20]}"

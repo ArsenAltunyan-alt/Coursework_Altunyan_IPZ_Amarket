@@ -1,0 +1,40 @@
+<div class="list-group list-group-flush chat-list">
+    {% if user_last_messages %}
+    {% for item in user_last_messages %}
+    <a href="{% url 'chat:room' item.user.username %}"
+        hx-get="{% url 'chat:room' item.user.username %}"
+        hx-target="#chat-panel"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        class="list-group-item list-group-item-action {% if item.user.username == room_name %} active {% endif %}">
+        <div class="d-flex align-items-center gap-3">
+            <img src="https://ui-avatars.com/api/?name={{ item.user.username|urlencode }}&size=64&background=random"
+                alt="{{ item.user.username }} profile" class="rounded-circle"
+                style="width: 44px; height: 44px; object-fit: cover" />
+            <div class="w-100">
+                <div class="d-flex justify-content-between">
+                    <strong class="text-truncate">{{ item.user.username }}</strong>
+                    <small class="timestamp text-muted">
+                        {% if item.last_message %}
+                        {{ item.last_message.timestamp|date:"H:i" }}
+                        {% else %}
+                        --:--
+                        {% endif %}
+                    </small>
+                </div>
+                <small class="d-block text-truncate text-muted last-message">
+                    {% if item.last_message %}
+                    {% if item.last_message.sender == request.user %}Ви:{% endif %}
+                    {{ item.last_message.content|truncatewords:6 }}
+                    {% else %}
+                    No messages yet
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+    {% else %}
+    <div class="p-4 text-muted">No chats yet.</div>
+    {% endif %}
+</div>
