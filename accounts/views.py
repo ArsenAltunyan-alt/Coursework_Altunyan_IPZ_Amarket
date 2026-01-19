@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from allauth.socialaccount.models import SocialAccount
 from .forms import (
     RegistrationStep1Form,
     RegistrationStep2Form,
     RegistrationStep3Form,
     CustomLoginForm,
-    ProfileUpdateForm
+    ProfileUpdateForm,
+    CustomPasswordChangeForm,
+    AccountDeleteForm
 )
 from .models import CustomUser
 
@@ -117,6 +120,7 @@ def user_logout(request):
 
 @login_required
 def profile(request):
+    is_google_user = SocialAccount.objects.filter(user=request.user, provider='google').exists()
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
@@ -128,7 +132,8 @@ def profile(request):
     
     return render(request, 'accounts/profile.html', {
         'form': form,
-        'user': request.user
+        'user': request.user,
+        'is_google_user': is_google_user
     })
 
 
@@ -140,4 +145,44 @@ def post_login_redirect(request):
         return redirect('accounts:register_step2')
 
     return redirect('accounts:profile')
+
+
+@login_required
+def password_change(request):
+    is_google_user = SocialAccount.objects.filter(user=request.user, provider='google').exists()
+    if is_google_user:
+        messages.info(request, 'Password changes are not available for Google accounts.')
+        return redirect('accounts:profile')
+
+    if request.method == 'POST':
+        form = CustomPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, request.user)
+            messages.success(request, 'Password updated successfully.')
+            return redirect('accounts:profile')
+    else:
+        form = CustomPasswordChangeForm(user=request.user)
+
+    return render(request, 'accounts/password_change.html', {
+        'form': form
+    })
+
+
+@login_required
+def account_delete(request):
+    if request.method == 'POST':
+        form = AccountDeleteForm(request.POST, user=request.user)
+        if form.is_valid():
+            user = request.user
+            logout(request)
+            user.delete()
+            messages.success(request, 'Your account has been deleted.')
+            return redirect('accounts:login')
+    else:
+        form = AccountDeleteForm(user=request.user)
+
+    return render(request, 'accounts/account_delete.html', {
+        'form': form
+    })
 

@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from .models import CustomUser
 
 
@@ -184,3 +184,43 @@ class ProfileUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].required = False
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].widget.attrs.update({
+            'class': 'form-input',
+            'placeholder': 'Поточний пароль'
+        })
+        self.fields['new_password1'].widget.attrs.update({
+            'class': 'form-input',
+            'placeholder': 'Новий пароль'
+        })
+        self.fields['new_password2'].widget.attrs.update({
+            'class': 'form-input',
+            'placeholder': 'Підтвердьте новий пароль'
+        })
+        self.fields['old_password'].label = 'Поточний пароль'
+        self.fields['new_password1'].label = 'Новий пароль'
+        self.fields['new_password2'].label = 'Підтвердьте новий пароль'
+
+
+class AccountDeleteForm(forms.Form):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Поточний пароль'
+        }),
+        label='Поточний пароль'
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user or not self.user.check_password(password):
+            raise forms.ValidationError('Невірний пароль.')
+        return password

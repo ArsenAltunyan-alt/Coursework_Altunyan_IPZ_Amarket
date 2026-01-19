@@ -1,0 +1,42 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Видалити акаунт{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 20px;">
+                <h2 class="text-center mb-3">Видалити акаунт</h2>
+                <p class="text-center text-muted mb-4">Введіть поточний пароль, щоб підтвердити видалення облікового запису.</p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.password.label }}</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-danger w-100 rounded-pill py-3 mt-3">
+                        Видалити акаунт
+                    </button>
+                </form>
+
+                <a href="{% url 'accounts:password_reset' %}" class="btn btn-light rounded-pill py-2 w-100 mt-3">
+                    Забули пароль?
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

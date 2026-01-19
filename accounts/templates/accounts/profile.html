@@ -235,6 +235,24 @@
                         </a>
                     </div>
                 </form>
+
+                <div class="mt-4 pt-3 border-top">
+                    <h5 class="mb-3">Account actions</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% if is_google_user %}
+                        <button class="btn btn-outline-secondary rounded-pill px-4 py-2" disabled>
+                           Неможливо змінити пароль (Google account)
+                        </button>
+                        {% else %}
+                        <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
+                            Змінити пароль
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'accounts:account_delete' %}" class="btn btn-outline-danger rounded-pill px-4 py-2">
+                            Видалити акаунт
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
