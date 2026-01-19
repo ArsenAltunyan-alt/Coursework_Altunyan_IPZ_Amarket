@@ -22,6 +22,12 @@
                                     class="list-group-item list-group-item-action {% if request.GET.category == category.slug %}active{% endif %}">
                                     {{ category.name }}
                                 </a>
+                                {% for subcategory in category.subcategories.all %}
+                                <a href="?category={{ subcategory.slug }}"
+                                    class="list-group-item list-group-item-action ms-3 {% if request.GET.category == subcategory.slug %}active{% endif %}">
+                                    {{ subcategory.name }}
+                                </a>
+                                {% endfor %}
                                 {% endfor %}
                                 {# Hidden input to keep category selected if form submitted #}
                                 {% if request.GET.category %}
@@ -143,7 +149,7 @@
                                 <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
                             </div>
                             {% if announcement.category %}
-                            <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.name }}</span>
+                            <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span>
                             </div>
                             {% endif %}
                         </div>

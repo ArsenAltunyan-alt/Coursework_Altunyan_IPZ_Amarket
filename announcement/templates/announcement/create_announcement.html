@@ -30,18 +30,20 @@
                         {# Main Form Fields #}
                         {% for field in form %}
                         {% if not field.is_hidden %}
+                        {% if field.name == 'category_parent' or field.name == 'category' %}
+                        {% else %}
                         <div class="mb-3">
                             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
 
                             {% if field.name == 'address' %}
                             <div class="input-group mb-2">
                                 {{ field }}
-                                <button class="btn btn-outline-secondary" type="button" id="search-address-btn">Знайти
-                                    на карті</button>
+                                <button class="btn btn-outline-secondary" type="button" id="search-address-btn">?-???????'??
+                                    ???? ???????'?-</button>
                             </div>
                             <div id="map"></div>
-                            <small class="text-muted d-block mb-2">Клікніть на карті, щоб встановити точне
-                                місцезнаходження, або введіть адресу і натисніть "Знайти"</small>
+                            <small class="text-muted d-block mb-2">???>?-?????-?'?? ???? ???????'?-, ?%???+ ?????'???????????'?? ?'????????
+                                ???-?????????????:?????????????, ???+?? ?????????-?'?? ???????????? ?- ?????'???????-?'?? "?-???????'??"</small>
                             {% else %}
                             {{ field }}
                             {% endif %}
@@ -57,11 +59,55 @@
                             </div>
                             {% endif %}
                         </div>
+                        {% if field.name == 'title' %}
+                        {# Category Fields #}
+                        <div class="mb-3">
+                            <label for="id_category_parent" class="form-label">{{ form.category_parent.label }}</label>
+                            <select name="category_parent" id="id_category_parent" class="form-select">
+                                <option value="">Не обрано</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}"
+                                    {% if form.category_parent.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category_parent.errors %}
+                            <div class="text-danger">
+                                {% for error in form.category_parent.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">{{ form.category.label }}</label>
+                            <select name="category" id="id_category" class="form-select">
+                                <option value="">Не обрано</option>
+                                {% for category in categories %}
+                                {% for subcategory in category.subcategories.all %}
+                                <option value="{{ subcategory.id }}" data-parent="{{ category.id }}"
+                                    {% if form.category.value|stringformat:"s" == subcategory.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ subcategory.name }}
+                                </option>
+                                {% endfor %}
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                            <div class="text-danger">
+                                {% for error in form.category.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endif %}
                         {% else %}
                         {{ field }}
                         {% endif %}
                         {% endfor %}
-
                         {# Image Upload Section #}
                         <div class="mb-3">
                             <label class="form-label">{{ image_form.images.label }}</label>
@@ -142,6 +188,38 @@
 
         // Reset main index to 0 on new selection
         mainImageIndexInput.value = 0;
+    });
+
+    // Category/Subcategory handling
+    document.addEventListener('DOMContentLoaded', function () {
+        const parentSelect = document.getElementById('id_category_parent');
+        const subcategorySelect = document.getElementById('id_category');
+        if (!parentSelect || !subcategorySelect) return;
+
+        const updateSubcategories = () => {
+            const parentId = parentSelect.value;
+            const options = subcategorySelect.querySelectorAll('option[data-parent]');
+
+            options.forEach(option => {
+                if (!parentId) {
+                    option.hidden = true;
+                    option.disabled = true;
+                    return;
+                }
+
+                const isMatch = option.dataset.parent === parentId;
+                option.hidden = !isMatch;
+                option.disabled = !isMatch;
+            });
+
+            const selectedOption = subcategorySelect.selectedOptions[0];
+            if (selectedOption && selectedOption.dataset.parent && selectedOption.dataset.parent !== parentId) {
+                subcategorySelect.value = '';
+            }
+        };
+
+        updateSubcategories();
+        parentSelect.addEventListener('change', updateSubcategories);
     });
 
     // --- Leaflet Map Logic ---

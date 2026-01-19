@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import AnnouncementForm, AnnouncementImageForm
 from .models import Announcement, AnnouncementImage, Category
 from django.contrib import messages
-from django.db.models import F
+from django.db.models import F, Q
 
 @login_required
 def create_announcement(request):
@@ -52,7 +52,7 @@ def create_announcement(request):
     
     image_form = AnnouncementImageForm()
     
-    categories = Category.objects.all()
+    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
     
     return render(request, 'announcement/create_announcement.html', {
         'form': form, 
@@ -98,7 +98,12 @@ def edit_announcement(request, pk):
     else:
         form = AnnouncementForm(instance=announcement)
     
-    return render(request, 'announcement/create_announcement.html', {'form': form, 'is_edit': True})
+    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
+    return render(request, 'announcement/create_announcement.html', {
+        'form': form,
+        'is_edit': True,
+        'categories': categories,
+    })
 
 @login_required
 def archive_announcement(request, pk):
@@ -125,7 +130,14 @@ def announcement_list(request):
     # Filter by Category
     category_slug = request.GET.get('category')
     if category_slug:
-        announcements = announcements.filter(category__slug=category_slug)
+        selected_category = Category.objects.filter(slug=category_slug).first()
+        if selected_category:
+            if selected_category.parent_id is None:
+                announcements = announcements.filter(
+                    category__in=Category.objects.filter(Q(pk=selected_category.pk) | Q(parent=selected_category))
+                )
+            else:
+                announcements = announcements.filter(category=selected_category)
 
     # Filter by Seller
     seller_username = request.GET.get('seller')

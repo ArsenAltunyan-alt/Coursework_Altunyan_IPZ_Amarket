@@ -17,6 +17,7 @@ class Announcement(models.Model):
     longitude = models.FloatField(null=True, blank=True, verbose_name='Довгота')
     
     CONDITION_CHOICES = [
+        ('', 'Не обрано'),
         ('new', 'Новий'),
         ('used', 'Б/В'),
     ]
@@ -42,14 +43,27 @@ class Announcement(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Назва')
     slug = models.SlugField(unique=True, verbose_name='Slug')
+    parent = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='subcategories',
+        on_delete=models.PROTECT,
+        verbose_name='Parent category',
+    )
     requires_condition = models.BooleanField(default=True, verbose_name='Потребує вказання стану')
 
     class Meta:
         verbose_name = 'Категорія'
         verbose_name_plural = 'Категорії'
 
-    def __str__(self):
+    def get_full_name(self):
+        if self.parent:
+            return f"{self.parent.name} / {self.name}"
         return self.name
+
+    def __str__(self):
+        return self.get_full_name()
 
 class AnnouncementImage(models.Model):
     announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE, related_name='images')
