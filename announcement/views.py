@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .forms import AnnouncementForm, AnnouncementImageForm
 from .models import Announcement, AnnouncementImage, Category
@@ -185,6 +186,7 @@ def favorites_list(request):
         'announcements': announcements,
     })
 
+
 @login_required
 def toggle_favorite(request, pk):
     announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
@@ -199,3 +201,8 @@ def toggle_favorite(request, pk):
     if next_url:
         return redirect(next_url)
     return redirect('announcement:detail', pk=announcement.pk)
+
+def load_subcategories(request):
+    category_id = request.GET.get('category_id')
+    subcategories = Category.objects.filter(parent_id=category_id).order_by('name')
+    return JsonResponse(list(subcategories.values('id', 'name')), safe=False)
