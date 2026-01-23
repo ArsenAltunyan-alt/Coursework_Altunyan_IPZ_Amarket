@@ -13,4 +13,5 @@ urlpatterns = [
     path('edit/<int:pk>/', views.edit_announcement, name='edit'),
     path('archive/<int:pk>/', views.archive_announcement, name='archive'),
     path('delete/<int:pk>/', views.delete_announcement, name='delete'),
+    path('ajax/load-subcategories/', views.load_subcategories, name='ajax_load_subcategories'),
 ]

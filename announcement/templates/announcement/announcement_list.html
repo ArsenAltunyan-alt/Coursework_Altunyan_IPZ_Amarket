@@ -1,169 +1,218 @@
 {% extends 'main/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/announcement_assets/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'main/announcement_assets/css/slick.css' %}">
+<link rel="stylesheet" href="{% static 'main/announcement_assets/css/jquery-ui.css' %}">
+<link rel="stylesheet" href="{% static 'main/announcement_assets/css/main.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        {# Sidebar Filters #}
-        <div class="col-md-3">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white fw-bold">Фільтри</div>
-                <div class="card-body">
-                    <form method="GET" action="{% url 'announcement:list' %}">
-                        {# Categories #}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Категорії</label>
-                            <div class="list-group">
-                                <a href="{% url 'announcement:list' %}"
-                                    class="list-group-item list-group-item-action {% if not request.GET.category %}active{% endif %}">
-                                    Всі категорії
-                                </a>
-                                {% for category in categories %}
-                                <a href="?category={{ category.slug }}"
-                                    class="list-group-item list-group-item-action {% if request.GET.category == category.slug %}active{% endif %}">
+<div class="side-overlay"></div>
+
+<div class="announcement-page">
+<section class="shop py-80">
+    <div class="container container-lg">
+        <div class="row">
+
+            <div class="col-lg-3">
+                <form class="shop-sidebar" method="get" action="{% url 'announcement:list' %}">
+                    <button type="button" class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
+                        <i class="ph ph-x"></i>
+                    </button>
+                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Категорії</h6>
+                        <ul class="max-h-540 overflow-y-auto scroll-sm">
+                            {% for category in categories %}
+                            {% with subcategories=category.subcategories.all %}
+                            <li class="mb-24">
+                                {% if subcategories %}
+                                <a class="d-flex justify-content-between align-items-center text-gray-900 hover-text-main-600 category-toggle{% if selected_category == category.slug %} text-main-600{% endif %}"
+                                   href="#"
+                                   role="button"
+                                   data-target="cat-{{ category.id }}"
+                                   aria-controls="cat-{{ category.id }}"
+                                   aria-expanded="{% if selected_category == category.slug %}true{% else %}false{% endif %}">
                                     {{ category.name }}
+                                    <i class="ph ph-caret-down"></i>
                                 </a>
-                                {% for subcategory in category.subcategories.all %}
-                                <a href="?category={{ subcategory.slug }}"
-                                    class="list-group-item list-group-item-action ms-3 {% if request.GET.category == subcategory.slug %}active{% endif %}">
-                                    {{ subcategory.name }}
-                                </a>
-                                {% endfor %}
-                                {% endfor %}
-                                {# Hidden input to keep category selected if form submitted #}
-                                {% if request.GET.category %}
-                                <input type="hidden" name="category" value="{{ request.GET.category }}">
+
+                                <ul class="collapse mt-12 ps-16{% if selected_category == category.slug %} show{% endif %}" id="cat-{{ category.id }}">
+                                    {% for subcategory in subcategories %}
+                                    <li class="mb-8">
+                                        <a href="?category={{ subcategory.slug }}" class="text-gray-700 hover-text-main-600{% if selected_category == subcategory.slug %} text-main-600{% endif %}">{{ subcategory.name }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <a href="?category={{ category.slug }}" class="text-gray-900 hover-text-main-600{% if selected_category == category.slug %} text-main-600{% endif %}">{{ category.name }}</a>
                                 {% endif %}
-                            </div>
-                        </div>
-
-                        {# Price Filter #}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Ціна (UAH)</label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <input type="number" name="min_price" class="form-control" placeholder="Від"
-                                        value="{{ request.GET.min_price }}">
+                            </li>
+                            {% endwith %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Ціна</h6>
+                        <div class="custom--range">
+                            <div id="slider-range" data-min="0" data-max="{{ max_price_value|default:0 }}" data-step="100" data-values="{{ min_price|default:0 }},{{ max_price|default:max_price_value }}" data-prefix="UAH "></div>
+                            <div class="flex-between flex-wrap-reverse gap-8 mt-24 ">
+                                <div class="custom--range__content flex-align gap-8">
+                                    <input type="number" class="form-control w-96" name="min_price" id="min_price" value="{{ min_price|default:0 }}" min="0" max="{{ max_price_value|default:0 }}">
+                                    <span class="text-gray-500 text-md flex-shrink-0">-</span>
+                                    <input type="number" class="form-control w-96" name="max_price" id="max_price" value="{{ max_price|default:max_price_value }}" min="0" max="{{ max_price_value|default:0 }}">
+                                    <input type="text" class="custom--range__prices text-neutral-600 text-start text-md fw-medium d-none" id="amount" readonly>
                                 </div>
-                                <div class="col-6">
-                                    <input type="number" name="max_price" class="form-control" placeholder="До"
-                                        value="{{ request.GET.max_price }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Стан</h6>
+                        <ul class="max-h-540 overflow-y-auto scroll-sm">
+                            {% for value, label in condition_choices %}
+                            <li class="mb-24">
+                                <div class="form-check common-check common-radio{% if forloop.first %} checked-black{% else %} checked-gray{% endif %}">
+                                    <input class="form-check-input" type="radio" name="condition" id="condition-{{ forloop.counter }}" value="{{ value }}" {% if selected_condition == value %}checked{% endif %}>
+                                    <label class="form-check-label" for="condition-{{ forloop.counter }}">{{ label }}</label>
                                 </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="shop-sidebar__box bargain-box border border-gray-100 rounded-8 p-32 mb-32">
+                        <div class="bargain-header">
+                            <h6 class="text-xl">Можливий торг</h6>
+                            <div class="form-check common-check bargain-check">
+                                <input class="form-check-input" type="checkbox" name="is_negotiable" id="bargain1" {% if is_negotiable_selected %}checked{% endif %}>
                             </div>
                         </div>
-
-                        {# Condition Filter #}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Стан</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="condition" id="condAny" value="" {% if not request.GET.condition %}checked{% endif %}>
-                                <label class="form-check-label" for="condAny">Будь-який</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="condition" id="condNew" value="new"
-                                    {% if request.GET.condition == 'new' %}checked{% endif %}>
-                                <label class="form-check-label" for="condNew">Новий</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="condition" id="condUsed" value="used"
-                                    {% if request.GET.condition == 'used' %}checked{% endif %}>
-                                <label class="form-check-label" for="condUsed">Б/В</label>
-                            </div>
-                        </div>
-
-                        {# Negotiation Filter #}
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="is_negotiable" id="isNegotiable"
-                                    {% if request.GET.is_negotiable %}checked{% endif %}>
-                                <label class="form-check-label" for="isNegotiable">Можливий торг</label>
-                            </div>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Застосувати</button>
-                            <a href="{% url 'announcement:list' %}"
-                                class="btn btn-link text-decoration-none mt-2">Скинути</a>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-16">
+                        <button type="submit" class="btn bg-main-600 text-white w-100">Застосувати</button>
+                    </div>
+                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-16 mt-12">
+                        <a href="{% url 'announcement:list' %}" class="btn bg-main-600 text-white w-100">Скинути фільтри</a>
+                    </div>
+                </form>
             </div>
-        </div>
 
-        {# Announcements List #}
-        <div class="col-md-9">
-            <h2 class="mb-4">Оголошення</h2>
+            <div class="col-lg-9">
+                <div class="flex-between gap-16 flex-wrap mb-40 ">
+                    <span class="text-gray-900">Показано {{ total_count }} із {{ total_count }} результатів</span>
+                    <div class="position-relative flex-align gap-16 flex-wrap">
+                        <div class="list-grid-btns flex-align gap-16">
+                            <button type="button" class="w-44 h-44 flex-center border border-gray-100 rounded-6 text-2xl list-btn">
+                                <i class="ph-bold ph-list-dashes"></i>
+                            </button>
+                            <button type="button" class="w-44 h-44 flex-center border border-main-600 text-white bg-main-600 rounded-6 text-2xl grid-btn">
+                                <i class="ph ph-squares-four"></i>
+                            </button>
+                        </div>  
+                        <div class="position-relative text-gray-500 flex-align gap-4 text-14">
+                            <label for="sorting" class="text-inherit flex-shrink-0">Сортувати за: </label>
+                            <select class="form-control common-input px-14 py-14 text-inherit rounded-6 w-auto" id="sorting">
+                                <option value="1">Нові</option>
+                                <option value="2">Ціна</option>
+                                <option value="3">Рейтинг</option>
+                            </select>
+                        </div>
+                        <button type="button" class="w-44 h-44 d-lg-none d-flex flex-center border border-gray-100 rounded-6 text-2xl sidebar-btn"><i class="ph-bold ph-funnel"></i></button>
+                    </div>
+                </div>
 
-            <div class="row row-cols-1 row-cols-md-3 g-4">
-                {% for announcement in announcements %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        {# Image Banner #}
-                        {% with main_image=announcement.get_main_image %}
-                        <a href="{% url 'announcement:detail' announcement.pk %}"
-                            class="text-decoration-none text-dark">
-                            {% if main_image %}
-                            <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
-                                style="height: 200px; object-fit: cover;">
+                <div class="list-grid-wrapper">
+                    {% for announcement in announcements %}
+                    <div class="announcement-card h-100 p-16 border border-gray-100 hover-border-main-600 rounded-16 position-relative transition-2">
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}" class="announcement-card__favorite{% if announcement.id in favorite_ids %} is-active{% endif %}" aria-label="Toggle favorite">
+                            <i class="ph{% if announcement.id in favorite_ids %}-fill{% endif %} ph-heart"></i>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}" class="announcement-card__favorite" aria-label="Login to favorite">
+                            <i class="ph ph-heart"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'announcement:detail' announcement.pk %}" class="announcement-card__thumb flex-center rounded-8 bg-gray-50 position-relative">
+                            {% if announcement.get_main_image %}
+                            <img src="{{ announcement.get_main_image.url }}" alt="{{ announcement.title }}" class="max-w-unset">
                             {% else %}
-                            <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
-                                style="height: 200px;">
-                                <span>Немає фото</span>
-                            </div>
+                            <img src="{% static 'main/announcement_assets/images/without_photo.png' %}" alt="No photo" class="max-w-unset">
+                            {% endif %}
+                            {% if announcement.is_negotiable %}
+                            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг</span>
                             {% endif %}
                         </a>
-                        {% endwith %}
+                        <div class="announcement-card__content mt-16">
+                            <h6 class="title text-lg fw-semibold mt-12 mb-8">
+                                <a href="{% url 'announcement:detail' announcement.pk %}" class="link text-line-2" tabindex="0">{{ announcement.title }}</a>
+                            </h6>
+                            <p class="text-gray-500 text-sm text-line-1 mb-16">
+                                {{ announcement.description|truncatechars:80 }}
+                            </p>
+                            <div class="flex-between gap-8 mb-16">
+                                <span class="text-gray-400 text-sm d-flex align-items-center gap-4">
+                                    <i class="ph ph-map-pin"></i> {{ announcement.address|truncatechars:18 }}
+                                </span>
+                                <span class="text-gray-400 text-sm">{{ announcement.created_at|date:"d.m.Y" }}</span>
+                            </div>
 
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title mb-0">
-                                    <a href="{% url 'announcement:detail' announcement.pk %}"
-                                        class="text-decoration-none text-dark">
-                                        {{ announcement.title }}
-                                    </a>
-                                </h5>
-                                {% if user.is_authenticated %}
-                                <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}"
-                                    class="text-decoration-none">
-                                    {% if announcement.id in favorite_ids %}
-                                    <i class="fas fa-heart text-danger"></i>
-                                    {% else %}
-                                    <i class="far fa-heart text-muted"></i>
-                                    {% endif %}
-                                </a>
+                            <div class="announcement-card__price my-20">
+                                {% if announcement.price and announcement.price > 0 %}
+                                <span class="text-heading text-md fw-semibold ">{{ announcement.price }} <span class="text-gray-500 fw-normal">/UAH</span> </span>
                                 {% else %}
-                                <a href="{% url 'accounts:login' %}?next={% url 'announcement:detail' announcement.pk %}"
-                                    class="text-decoration-none">
-                                    <i class="far fa-heart text-muted"></i>
-                                </a>
+                                <span class="text-heading text-md fw-semibold ">Без ціни</span>
                                 {% endif %}
                             </div>
-                            <h6 class="card-subtitle mb-2 text-muted">
-                                {{ announcement.price|default:"Без ціни" }}
-                                {% if announcement.price %}UAH{% endif %}
-                            </h6>
-                            <p class="card-text text-truncate">{{ announcement.description }}</p>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0 small text-muted">
-                            <div class="d-flex justify-content-between">
-                                <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:15 }}</span>
-                                <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
-                            </div>
+                            
                             {% if announcement.category %}
-                            <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span>
+                            <div class="mb-20">
+                                <span class="bg-danger text-white px-12 py-4 rounded-pill fw-bold text-xs" style="background-color: #eb4324 !important;">
+                                    {{ announcement.category.get_full_name }}
+                                </span>
                             </div>
                             {% endif %}
+
+                            <a href="{% url 'announcement:detail' announcement.pk %}" class="announcement-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex-center gap-8 fw-medium" tabindex="0">
+                                Переглянути
+                            </a>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info text-center">
-                        Оголошень не знайдено.
-                    </div>
-                </div>
-                {% endfor %}
             </div>
         </div>
     </div>
+</section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'main/announcement_assets/js/phosphor-icon.js' %}"></script>
+<script src="{% static 'main/announcement_assets/js/select2.min.js' %}"></script>
+<script src="{% static 'main/announcement_assets/js/slick.min.js' %}"></script>
+<script src="{% static 'main/announcement_assets/js/count-down.js' %}"></script>
+<script src="{% static 'main/announcement_assets/js/jquery-ui.js' %}"></script>
+<script src="{% static 'main/announcement_assets/js/main.js' %}"></script>
+<script>
+    (function () {
+        var toggles = document.querySelectorAll('.announcement-page .category-toggle');
+        if (!toggles.length) return;
+
+        toggles.forEach(function (toggle) {
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                var targetId = toggle.getAttribute('data-target');
+                if (!targetId) return;
+
+                var target = document.getElementById(targetId);
+                if (!target) return;
+
+                var isOpen = target.classList.contains('show');
+                target.classList.toggle('show', !isOpen);
+                toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+        });
+    })();
+</script>
 {% endblock %}

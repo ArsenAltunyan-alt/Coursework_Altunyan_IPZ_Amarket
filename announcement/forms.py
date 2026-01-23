@@ -5,29 +5,38 @@ class AnnouncementForm(forms.ModelForm):
     category_parent = forms.ModelChoiceField(
         queryset=Category.objects.none(),
         required=True,
-        label='Category',
+        label='Категорія',
+        empty_label='Не обрано',
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_category_parent'}),
     )
     category = forms.ModelChoiceField(
         queryset=Category.objects.none(),
-        required=False,
-        label='Subcategory',
+        required=True,
+        label='Підкатегорія',
+        empty_label='Не обрано',
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_category'}),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['category_parent'].queryset = Category.objects.filter(parent__isnull=True).order_by('name')
-        self.fields['category'].queryset = Category.objects.filter(parent__isnull=False).select_related('parent').order_by('parent__name', 'name')
+        self.fields['category'].queryset = Category.objects.none()
 
-        instance = kwargs.get('instance')
-        if instance and instance.category_id:
-            if instance.category.parent_id:
-                self.initial['category_parent'] = instance.category.parent_id
-                self.initial['category'] = instance.category_id
+        if 'category_parent' in self.data:
+            try:
+                category_parent_id = int(self.data.get('category_parent'))
+                self.fields['category'].queryset = Category.objects.filter(parent_id=category_parent_id).order_by('name')
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.category:
+            if self.instance.category.parent:
+                self.fields['category'].queryset = self.instance.category.parent.subcategories.order_by('name')
+                self.initial['category_parent'] = self.instance.category.parent_id
+                self.initial['category'] = self.instance.category_id
             else:
-                self.initial['category_parent'] = instance.category_id
+                self.initial['category_parent'] = self.instance.category_id
                 self.initial['category'] = None
+                self.fields['category'].queryset = self.instance.category.subcategories.order_by('name')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -44,9 +53,10 @@ class AnnouncementForm(forms.ModelForm):
 
     class Meta:
         model = Announcement
-        fields = ['title', 'category', 'condition', 'description', 'price', 'is_negotiable', 'address', 'latitude', 'longitude']
+        fields = ['title', 'category_parent','category', 'condition', 'description', 'price', 'is_negotiable', 'address', 'latitude', 'longitude']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Назва оголошення'}),
+            'category_parent': forms.Select(attrs={'class': 'form-select'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'condition': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Опис оголошення', 'rows': 5}),
@@ -55,6 +65,14 @@ class AnnouncementForm(forms.ModelForm):
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Адреса', 'id': 'address-input'}),
             'latitude': forms.HiddenInput(attrs={'id': 'id_latitude'}),
             'longitude': forms.HiddenInput(attrs={'id': 'id_longitude'}),
+        }
+        error_messages = {
+            'title': {'required': "Це поле є обов'язковим"},
+            'category_parent': {'required': "Це поле є обов'язковим"},
+            'category': {'required': "Це поле є обов'язковим"},
+            'description': {'required': "Це поле є обов'язковим"},
+            'condition': {'required': "Це поле є обов'язковим"},
+            'address': {'required': "Це поле є обов'язковим"},
         }
 
 class MultipleFileInput(forms.FileInput):

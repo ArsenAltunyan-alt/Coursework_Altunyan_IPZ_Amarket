@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import AnnouncementForm, AnnouncementImageForm
 from .models import Announcement, AnnouncementImage, Category
 from django.contrib import messages
-from django.db.models import F, Q
+from django.db.models import F, Q, Max
 
 @login_required
 def create_announcement(request):
@@ -126,7 +126,11 @@ def delete_announcement(request, pk):
 
 def announcement_list(request):
     announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')
-    categories = Category.objects.all()
+    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
+    max_price_value = Announcement.objects.filter(
+        is_active=True,
+        price__isnull=False,
+    ).aggregate(Max('price'))['price__max'] or 0
     
     # Filter by Category
     category_slug = request.GET.get('category')
@@ -148,10 +152,13 @@ def announcement_list(request):
     # Filter by Price
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
-    if min_price:
-        announcements = announcements.filter(price__gte=min_price)
-    if max_price:
-        announcements = announcements.filter(price__lte=max_price)
+    if min_price == '0' and max_price == '0':
+        announcements = announcements.filter(Q(price__isnull=True) | Q(price=0))
+    else:
+        if min_price:
+            announcements = announcements.filter(price__gte=min_price)
+        if max_price:
+            announcements = announcements.filter(price__lte=max_price)
         
     # Filter by Condition
     condition = request.GET.get('condition')
@@ -173,6 +180,14 @@ def announcement_list(request):
         'announcements': announcements,
         'categories': categories,
         'favorite_ids': favorite_ids,
+        'condition_choices': Announcement.CONDITION_CHOICES,
+        'selected_category': category_slug or '',
+        'selected_condition': condition or '',
+        'min_price': min_price or '',
+        'max_price': max_price or '',
+        'is_negotiable_selected': is_negotiable == 'on',
+        'total_count': announcements.count(),
+        'max_price_value': max_price_value,
     }
     return render(request, 'announcement/announcement_list.html', context)
 
