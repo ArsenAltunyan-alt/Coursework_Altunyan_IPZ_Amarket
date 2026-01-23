@@ -29,14 +29,12 @@
         :root {
             --primary: var(--bs-primary);
             --primary-dark: #06BBCC;
-            /* Approximate dark variant of common primary */
             --secondary: var(--bs-secondary);
             --gray: #6c757d;
             --gray-light: #e9ecef;
             --light: #f8f9fa;
             --dark: #212529;
             --white: #ffffff;
-            --success: #198754;
             --warning: #ffc107;
         }
     </style>
@@ -63,19 +61,11 @@
                 </div>
             </div>
             <div class="col-lg-4 text-center d-flex align-items-center justify-content-center">
-                <span class="txt-rotate text-muted emoji" data-period="2000"
+                <span class="txt-rotate text-muted emoji" data-period="4000"
                     data-rotate='[ "💙💛 Слава Україні !!!", "🎖️ Героям слава!!!" ]'></span>
             </div>
             <div class="col-lg-4 text-center text-lg-end">
                 <div class="d-inline-flex align-items-center" style="height: 45px;">
-                    <div class="dropdown">
-                        <a href="#" class="dropdown-toggle text-muted me-2"
-                            data-bs-toggle="dropdown"><small>UAH</small></a>
-                        <div class="dropdown-menu rounded">
-                            <a href="#" class="dropdown-item">USD</a>
-                            <a href="#" class="dropdown-item">EUR</a>
-                        </div>
-                    </div>
                     <div class="dropdown">
                         <a href="#" class="dropdown-toggle text-muted mx-2"
                             data-bs-toggle="dropdown"><small>Укр</small></a>
@@ -89,7 +79,8 @@
                         <a href="#" class="dropdown-toggle text-muted ms-2" data-bs-toggle="dropdown"><small><i
                                     class="fa fa-user me-2"></i>{{ user.username }}</small></a>
                         <div class="dropdown-menu rounded">
-                            <a href="{% url 'accounts:profile' %}" class="dropdown-item">Мій акаунт</a>
+                            <a href="{% url 'accounts:profile' %}" class="dropdown-item">Мій профіль</a>
+                            <a href="{% url 'announcement:list' %}" class="dropdown-item">Мої оголошення</a>
                             <a href="{% url 'accounts:logout' %}" class="dropdown-item">Вийти</a>
                         </div>
                     </div>
@@ -114,7 +105,7 @@
                 <div class="d-inline-flex align-items-center">
                     <a href="{% url 'home' %}" class="navbar-brand p-0">
                         <h1 class="display-5 text-primary m-0"><i
-                                class="fas fa-shopping-bag text-secondary me-2"></i>Amarket</h1>
+                                class="fas fas fa-user-friends text-secondary me-2"></i>Amarket</h1>
                     </a>
                 </div>
             </div>
@@ -131,10 +122,16 @@
             <div class="col-md-4 col-lg-3 text-center text-lg-end">
                 <div class="d-inline-flex align-items-center">
                     {% if user.is_authenticated %}
+                    <a href="{% url 'chat:index' %}"
+                        class="text-muted d-flex align-items-center justify-content-center me-3"><span
+                            class="rounded-circle btn-md-square border"><i class="fas fa-comment"></i></span></a>
                     <a href="{% url 'announcement:favorites' %}"
                         class="text-muted d-flex align-items-center justify-content-center me-3"><span
                             class="rounded-circle btn-md-square border"><i class="fas fa-heart"></i></span></a>
                     {% else %}
+                    <a href="{% url 'accounts:login' %}?next={% url 'chat:index' %}"
+                        class="text-muted d-flex align-items-center justify-content-center me-3"><span
+                            class="rounded-circle btn-md-square border"><i class="fas fa-comment"></i></span></a>
                     <a href="{% url 'accounts:login' %}?next={% url 'announcement:favorites' %}"
                         class="text-muted d-flex align-items-center justify-content-center me-3"><span
                             class="rounded-circle btn-md-square border"><i class="fas fa-heart"></i></span></a>
@@ -161,13 +158,10 @@
                     </button>
                     <div class="collapse navbar-collapse" id="navbarCollapse">
                         <div class="navbar-nav ms-auto py-0">
-                            <a href="{% url 'home' %}" class="nav-item nav-link {% if request.path == '/' %}active{% endif %}">Головна</a>
-                            <a href="{% url 'announcement:list' %}" class="nav-item nav-link {% if '/announcement/' in request.path and 'user' not in request.path %}active{% endif %}">Оголошення</a>
-                            {% if user.is_authenticated %}
-                            <a href="{% url 'accounts:profile' %}" class="nav-item nav-link {% if '/accounts/profile' in request.path %}active{% endif %}">Профіль</a>
-                            {% endif %}
-                            <a href="{% url 'chat:index' %}" class="nav-item nav-link {% if '/chat/' in request.path %}active{% endif %}">Мої повідомлення</a>
-                            <a href="{% url 'announcement:user_list' %}" class="nav-item nav-link me-2 {% if 'user_list' in request.path %}active{% endif %}">Мої оголошення</a>
+                            <a href="{% url 'home' %}"
+                                class="nav-item nav-link {% if request.path == '/' %}active{% endif %}">Головна</a>
+                            <a href="{% url 'announcement:list' %}"
+                                class="nav-item nav-link me-2 {% if '/announcement/' in request.path and 'user' not in request.path %}active{% endif %}">Оголошення</a>
                         </div>
                         <a href="{% url 'announcement:create' %}"
                             class="btn btn-secondary rounded-pill py-2 px-4 px-lg-3 mb-3 mb-md-3 mb-lg-0"><i
@@ -192,40 +186,19 @@
 
     {% block content %}{% endblock %}
 
-    <!-- Footer Start -->
-    <div class="container-fluid footer py-5 wow fadeIn" data-wow-delay="0.2s">
-        <div class="container py-5">
-            <div class="row g-4 rounded mb-5" style="background: rgba(255, 255, 255, .03);">
-                <div class="col-md-6 col-lg-6 col-xl-3">
-                    <div class="rounded p-4">
-                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mb-4"
-                            style="width: 70px; height: 70px;">
-                            <i class="fas fa-map-marker-alt fa-2x text-primary"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-white">Адреса</h4>
-                            <p class="mb-2">123 Вулиця, Київ, Україна</p>
-                        </div>
-                    </div>
-                </div>
-                <!-- Add other footer columns as needed -->
-            </div>
-        </div>
-    </div>
-    <!-- Footer End -->
-
-    <!-- Copyright Start -->
     <div class="container-fluid copyright py-4">
         <div class="container">
             <div class="row g-4 align-items-center">
-                <div class="col-md-6 text-center text-md-start mb-md-0">
-                    <span class="text-white"><a href="#" class="border-bottom text-white"><i
-                                class="fas fa-copyright text-light me-2"></i>Amarket</a>, Усі права захищено.</span>
+                <div class="col-12 text-center">
+                    <span class="text-white">
+                        <a href="#" class="border-bottom text-white">
+                            <i class="fas fa-copyright text-light me-2"></i>Amarket
+                        </a>, Усі права захищено.
+                    </span>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Copyright End -->
 
     <!-- Back to Top -->
     <a href="#" class="btn btn-primary btn-lg-square back-to-top"><i class="fa fa-arrow-up"></i></a>
