@@ -906,6 +906,12 @@
         if ($maxInput.length) $maxInput.val(rangeValues[1]);
     };
 
+    var triggerHtmxFilter = function () {
+        var changeEvent = new Event("change", { bubbles: true });
+        if ($minInput.length) $minInput[0].dispatchEvent(changeEvent);
+        if ($maxInput.length) $maxInput[0].dispatchEvent(changeEvent);
+    };
+
     var updateSlider = function () {
         var minVal = $minInput.length ? parseFloat($minInput.val()) : min;
         var maxVal = $maxInput.length ? parseFloat($maxInput.val()) : max;
@@ -936,6 +942,11 @@
         slide: function( event, ui ) {
             updateInputs(ui.values);
             $("#amount").val(formatValue(ui.values[0]) + " - " + formatValue(ui.values[1]));
+        },
+        stop: function (event, ui) {
+            updateInputs(ui.values);
+            $("#amount").val(formatValue(ui.values[0]) + " - " + formatValue(ui.values[1]));
+            triggerHtmxFilter();
         }
     });
     $("#amount").val(formatValue($slider.slider("values", 0)) +

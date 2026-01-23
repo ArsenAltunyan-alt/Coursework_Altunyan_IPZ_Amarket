@@ -189,6 +189,8 @@ def announcement_list(request):
         'total_count': announcements.count(),
         'max_price_value': max_price_value,
     }
+    if request.headers.get("HX-Request") == "true":
+        return render(request, 'announcement/partials/announcement_cards.html', context)
     return render(request, 'announcement/announcement_list.html', context)
 
 @login_required
