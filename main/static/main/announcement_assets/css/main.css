@@ -4001,13 +4001,6 @@ body {
     padding-block-end: 60px !important;
 }
 
-@media (min-width: 992px) {
-    .announcement-page .py-80{
-        padding-block-start: 80px !important;
-        padding-block-end: 80px !important;
-    }
-}
-
 .announcement-page .pt-80{
     padding-block-start: 60px !important;
 }

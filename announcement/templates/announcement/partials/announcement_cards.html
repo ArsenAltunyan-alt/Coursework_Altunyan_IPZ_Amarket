@@ -17,9 +17,24 @@
         {% else %}
         <img src="{% static 'main/announcement_assets/images/without_photo.png' %}" alt="No photo" class="max-w-unset">
         {% endif %}
-        {% if announcement.is_negotiable %}
-        <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг</span>
-        {% endif %}
+        {% if announcement.is_negotiable and announcement.condition == "new" %}
+            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span> 
+            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0" style="left: 45px;">Новий</span>
+
+        {% elif announcement.is_negotiable and announcement.condition == "used" %}
+            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span> 
+            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0" style="left: 45px;">Б/В</span>
+
+        {% elif announcement.is_negotiable %}
+            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг</span>
+
+        {% elif announcement.condition == "new" %}
+            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Новий</span>
+
+        {% elif announcement.condition == "used" %}
+            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Б/В</span>
+
+{% endif %}
     </a>
     <div class="announcement-card__content mt-16">
         <h6 class="title text-lg fw-semibold mt-12 mb-8">
@@ -37,7 +52,7 @@
 
         <div class="announcement-card__price my-20">
             {% if announcement.price and announcement.price > 0 %}
-            <span class="text-heading text-md fw-semibold ">{{ announcement.price }} <span class="text-gray-500 fw-normal">/UAH</span> </span>
+            <span class="text-heading text-md fw-semibold ">{{ announcement.price }}<span class="text-gray-500 fw-normal">/UAH</span> </span>
             {% else %}
             <span class="text-heading text-md fw-semibold ">Без ціни</span>
             {% endif %}
