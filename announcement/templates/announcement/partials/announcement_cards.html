@@ -15,7 +15,7 @@
         {% if announcement.get_main_image %}
         <img src="{{ announcement.get_main_image.url }}" alt="{{ announcement.title }}" class="max-w-unset">
         {% else %}
-        <img src="{% static 'main/announcement_assets/images/without_photo.png' %}" alt="No photo" class="max-w-unset">
+        <img src="{% static 'main/announcement_assets/img/without_photo.png' %}" alt="No photo" class="max-w-unset">
         {% endif %}
         {% if announcement.is_negotiable and announcement.condition == "new" %}
             <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span> 

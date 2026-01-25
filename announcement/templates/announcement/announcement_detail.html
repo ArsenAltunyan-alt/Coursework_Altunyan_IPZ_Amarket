@@ -58,7 +58,7 @@
                     {% empty %}
                     <div class="carousel-item active">
                         <div class="d-flex align-items-center justify-content-center">
-                            <img src="{% static 'main/announcement_assets/images/without_photo.png' %}"
+                            <img src="{% static 'main/announcement_assets/img/without_photo.png' %}"
                                 class="d-block w-100" style="object-fit: contain; max-height: 600px;">
                         </div>
                     </div>
@@ -151,10 +151,8 @@
                             <img src="{{ announcement.seller.profile_photo.url }}" class="rounded-circle" width="60"
                                 height="60" alt="{{ announcement.seller.username }}">
                             {% else %}
-                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white"
-                                style="width: 60px; height: 60px; font-size: 24px;">
-                                {{ announcement.seller.username|first|upper }}
-                            </div>
+                            <img src="{% static 'main/img/avatar.png' %}" class="rounded-circle" width="60"
+                                height="60" alt="Default avatar">
                             {% endif %}
                         </div>
                         <div class="flex-grow-1 ms-3">

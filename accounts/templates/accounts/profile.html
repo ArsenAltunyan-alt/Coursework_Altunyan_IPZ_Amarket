@@ -1,6 +1,7 @@
 {% extends 'main/base.html' %}
+{% load static %}
 
-{% block title %}Профіль - {{ user.full_name }}{% endblock %}
+{% block title %}Profile - {{ user.full_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -26,7 +27,7 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        background: #f5f5f5;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -97,6 +98,100 @@
         margin-top: 2rem;
     }
 
+    .profile-tabs {
+        border-bottom: 1px solid var(--gray-light);
+        gap: 0.5rem;
+    }
+
+    .profile-tabs .nav-link {
+        border: 1px solid transparent;
+        color: var(--gray);
+        font-weight: 600;
+        padding: 0.5rem 1.25rem;
+        background: #f5f5f5;
+    }
+
+    .profile-tabs .nav-link.active {
+        background:#e9e9e9;
+        color: var(--gray);
+    }
+
+    .tab-card {
+        border: 1px solid var(--gray-light);
+        border-radius: 10px;
+        padding: 1.25rem;
+        background: #f5f5f5;
+    }
+
+    .profile-info-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .profile-info-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: #e3e3e3;
+        border-radius: 10px;
+        padding: 0.9rem 1rem;
+    }
+
+    .profile-info-card i {
+        color: #f59e0b;
+        margin-top: 0.15rem;
+    }
+
+    .profile-info-meta {
+        font-size: 0.8rem;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.2rem;
+    }
+
+    .profile-info-value {
+        color: var(--gray);
+        font-size: 1rem;
+    }
+
+    .profile-form .form-label {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.35rem;
+    }
+
+    .profile-form input:not([type="checkbox"]):not([type="radio"]),
+    .profile-form select,
+    .profile-form textarea {
+        width: 100%;
+        padding: 0.65rem 0.9rem;
+        border: 1px solid var(--gray-light);
+        border-radius: 12px;
+        background: #fff;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .profile-form input[type="file"] {
+        padding: 0.5rem;
+        background: var(--light);
+        border-radius: 12px;
+        border: 1px dashed var(--gray-light);
+    }
+
+    .profile-form input:focus,
+    .profile-form select:focus,
+    .profile-form textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .profile-form .text-danger {
+        font-size: 0.85rem;
+    }
+
     @media (max-width: 768px) {
         .profile-header {
             flex-direction: column;
@@ -113,9 +208,8 @@
 {% block content %}
 <div class="container py-5">
     <div class="row g-4">
-        <!-- Profile Info Column -->
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 20px;">
+            <div class="card border-0 p-4 h-100 bg-light rounded">
                 <div class="text-center profile-header pb-3 border-bottom mb-4"
                     style="flex-direction: column; gap: 1rem; border-color: var(--gray-light) !important;">
                     {% if user.profile_photo %}
@@ -123,10 +217,9 @@
                         class="profile-avatar mb-3"
                         style="width: 150px; height: 150px; border: 4px solid var(--primary); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);">
                     {% else %}
-                    <div class="profile-avatar-placeholder mb-3 mx-auto"
-                        style="width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; color: var(--white); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);">
-                        {{ user.first_name.0|upper }}{{ user.last_name.0|upper }}
-                    </div>
+                    <img src="{% static 'main/img/avatar.png' %}" alt="Default avatar"
+                        class="profile-avatar mb-3"
+                        style="width: 150px; height: 150px; border: 4px solid var(--primary); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);">
                     {% endif %}
 
                     <div class="profile-info">
@@ -135,126 +228,319 @@
                     </div>
                 </div>
 
-                <h4 class="mb-4 text-primary"><i class="fas fa-user-circle me-2"></i>Інформація про профіль</h4>
+                <h4 class="mb-4 text-primary"><i class="fas fa-user-circle me-2"></i>Інформація профілю</h4>
 
-                <div class="vstack gap-3">
-                    <div class="info-item p-3 bg-light rounded-3 border-start border-4 border-primary">
-                        <div class="small text-muted text-uppercase fw-bold mb-1">📧 Email</div>
-                        <div class="fw-medium">{{ user.email }}</div>
-                    </div>
-
-                    <div class="info-item p-3 bg-light rounded-3 border-start border-4 border-primary">
-                        <div class="small text-muted text-uppercase fw-bold mb-1">📱 Телефон</div>
-                        <div class="fw-medium">{{ user.phone_number }}</div>
-                    </div>
-
-                    <div class="info-item p-3 bg-light rounded-3 border-start border-4 border-primary">
-                        <div class="small text-muted text-uppercase fw-bold mb-1">🏙️ Місто</div>
-                        <div class="fw-medium {% if not user.city %}text-muted fst-italic{% endif %}">
-                            {{ user.city|default:"Не вказано" }}
+                <div class="profile-info-list">
+                    <div class="profile-info-card">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <div class="profile-info-meta">Електронна пошта</div>
+                            <div class="profile-info-value">{{ user.email }}</div>
                         </div>
                     </div>
 
-                    <div class="info-item p-3 bg-light rounded-3 border-start border-4 border-primary">
-                        <div class="small text-muted text-uppercase fw-bold mb-1">📅 Дата реєстрації</div>
-                        <div class="fw-medium">{{ user.date_joined|date:"d.m.Y" }}</div>
+                    <div class="profile-info-card">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <div class="profile-info-meta">Телефон</div>
+                            <div class="profile-info-value">{{ user.phone_number|default:"Not set" }}</div>
+                        </div>
                     </div>
+
+                    <div class="profile-info-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <div class="profile-info-meta">Місто</div>
+                            <div class="profile-info-value">{{ user.city|default:"Not set" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="profile-info-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div>
+                            <div class="profile-info-meta">Дата реєстрації</div>
+                            <div class="profile-info-value">{{ user.date_joined|date:"d.m.Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <a href="{% url 'announcement:favorites' %}" class="btn btn-outline-warning w-100 rounded-pill">
+                        <i class="fas fa-heart me-2"></i>Вибране
+                    </a>
                 </div>
             </div>
         </div>
 
         <!-- Edit Profile Column -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm p-4 p-md-5 h-100" style="border-radius: 20px;">
-                <h3 class="mb-4 pb-2 border-bottom"><i class="fas fa-edit me-2 text-warning"></i>Редагувати профіль</h3>
+            <div class="card border-0 p-4 p-md-5 h-100 bg-light rounded">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                    <h3 class="mb-0"><i class="fas fa-edit me-2 text-warning"></i>Редагувати профіль</h3>
+                </div>
 
-                <form method="post" enctype="multipart/form-data" novalidate>
-                    {% csrf_token %}
+                <ul class="nav profile-tabs mb-4" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="home-tab" data-bs-toggle="tab"
+                            data-bs-target="#home-tab-pane" type="button" role="tab" aria-controls="home-tab-pane"
+                            aria-selected="true">
+                            Основні дані
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="announcements-tab" data-bs-toggle="tab"
+                            data-bs-target="#announcements-tab-pane" type="button" role="tab"
+                            aria-controls="announcements-tab-pane" aria-selected="false">
+                            Мої оголошення
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="security-tab" data-bs-toggle="tab"
+                            data-bs-target="#security-tab-pane" type="button" role="tab"
+                            aria-controls="security-tab-pane" aria-selected="false">
+                            Налаштування
+                        </button>
+                    </li>
+                </ul>
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.first_name.label }}</label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                            <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                <div class="tab-content" id="profileTabsContent">
+                    <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab"
+                        tabindex="0">
+                        <form method="post" enctype="multipart/form-data" novalidate class="profile-form">
+                            {% csrf_token %}
 
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.last_name.label }}</label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                            <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.first_name.label }}</label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
 
-                        <div class="col-12">
-                            <label class="form-label">{{ form.email.label }}</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                            <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.last_name.label }}</label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.phone_number.label }}</label>
-                            {{ form.phone_number }}
-                            {% if form.phone_number.errors %}
-                            <div class="text-danger small mt-1">{{ form.phone_number.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                                <div class="col-12">
+                                    <label class="form-label">{{ form.email.label }}</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.city.label }}</label>
-                            {{ form.city }}
-                            {% if form.city.errors %}
-                            <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.phone_number.label }}</label>
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                    <div class="text-danger small mt-1">{{ form.phone_number.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
 
-                        <div class="col-12">
-                            <label class="form-label">{{ form.profile_photo.label }}</label>
-                            {{ form.profile_photo }}
-                            {% if form.profile_photo.errors %}
-                            <div class="text-danger small mt-1">{{ form.profile_photo.errors.0 }}</div>
-                            {% endif %}
-                            {% if user.profile_photo %}
-                            <small class="text-muted d-block mt-2">
-                                <i class="fas fa-info-circle me-1"></i>Поточне фото буде замінено, якщо ви оберете нове
-                            </small>
-                            {% endif %}
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.city.label }}</label>
+                                    <div class="city-autocomplete">
+                                        {{ form.city }}
+                                        <div class="city-suggestions" id="city-suggestions"></div>
+                                    </div>
+                                    {% if form.city.errors %}
+                                    <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">{{ form.profile_photo.label }}</label>
+                                    {{ form.profile_photo }}
+                                    {% if form.profile_photo.errors %}
+                                    <div class="text-danger small mt-1">{{ form.profile_photo.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if user.profile_photo %}
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>Current photo will be replaced if you choose a new one
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-3 mt-4 pt-3 border-top">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                                    <i class="fas fa-save me-2"></i>Зберегти зміни
+                                </button>
+                                <a href="{% url 'accounts:profile' %}"
+                                    class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="announcements-tab-pane" role="tabpanel"
+                        aria-labelledby="announcements-tab" tabindex="0">
+                        <div class="tab-card">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                                <div>
+                                    <h5 class="mb-1">Мої оголошення</h5>
+                                    <p class="text-muted mb-0">Ваші активні та архівовані оголошення.</p>
+                                </div>
+                                <a href="{% url 'announcement:create' %}"
+                                    class="btn btn-outline-primary rounded-pill px-4 py-2">
+                                    <i class="fas fa-plus me-2"></i>Створити оголошення
+                                </a>
+                            </div>
+
+                            <div class="row g-3">
+                                {% for announcement in announcements %}
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        <a href="{% url 'announcement:detail' announcement.pk %}"
+                                                            class="text-decoration-none text-dark">
+                                                            {{ announcement.title }}
+                                                        </a>
+                                                    </h6>
+                                                    <div class="text-muted small mb-2">
+                                                        {{ announcement.price|default:"No price" }}
+                                                        {% if announcement.price %}UAH{% endif %}
+                                                    </div>
+                                                    <div class="text-muted small">
+                                                        {{ announcement.description|truncatewords:16 }}
+                                                    </div>
+                                                </div>
+                                                {% if not announcement.is_active %}
+                                                <span class="badge bg-warning text-dark">Archived</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                                <a href="{% url 'announcement:edit' announcement.pk %}"
+                                                    class="btn btn-sm btn-outline-primary">
+                                                    Edit
+                                                </a>
+                                                <a href="{% url 'announcement:archive' announcement.pk %}"
+                                                    class="btn btn-sm btn-outline-warning">
+                                                    {% if announcement.is_active %}Archive{% else %}Restore{% endif %}
+                                                </a>
+                                                <a href="{% url 'announcement:delete' announcement.pk %}"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Ви впевнені??');">
+                                                    Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <div class="alert alert-info mb-0">
+                                        У вас немає оголошень.
+                                        <a href="{% url 'announcement:create' %}">Створіть перший!</a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
 
-                    <div class="d-flex gap-3 mt-4 pt-3 border-top">
-                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
-                            <i class="fas fa-save me-2"></i>Зберегти зміни
-                        </button>
-                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary rounded-pill px-4 py-2">
-                            Скасувати
-                        </a>
-                    </div>
-                </form>
-
-                <div class="mt-4 pt-3 border-top">
-                    <h5 class="mb-3">Account actions</h5>
-                    <div class="d-flex flex-wrap gap-3">
-                        {% if is_google_user %}
-                        <button class="btn btn-outline-secondary rounded-pill px-4 py-2" disabled>
-                           Неможливо змінити пароль (Google account)
-                        </button>
-                        {% else %}
-                        <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
-                            Змінити пароль
-                        </a>
-                        {% endif %}
-                        <a href="{% url 'accounts:account_delete' %}" class="btn btn-outline-danger rounded-pill px-4 py-2">
-                            Видалити акаунт
-                        </a>
+                    <div class="tab-pane fade" id="security-tab-pane" role="tabpanel" aria-labelledby="security-tab"
+                        tabindex="0">
+                        <div class="tab-card">
+                            <h5 class="mb-3">Налаштування облікового запису</h5>
+                            <div class="d-flex flex-wrap gap-3">
+                                {% if is_google_user %}
+                                <button class="btn btn-outline-secondary rounded-pill px-4 py-2" disabled>
+                                    Зміна пароля недоступна (Google account)
+                                </button>
+                                {% else %}
+                                <a href="{% url 'accounts:password_change' %}"
+                                    class="btn btn-outline-primary rounded-pill px-4 py-2">
+                                    Змінити пароль
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'accounts:account_delete' %}"
+                                    class="btn btn-outline-danger rounded-pill px-4 py-2">
+                                    Видалити акаунт
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        const cityInput = document.getElementById('{{ form.city.id_for_label }}');
+        const suggestions = document.getElementById('city-suggestions');
+        if (!cityInput || !suggestions) {
+            return;
+        }
+
+        cityInput.setAttribute('autocomplete', 'off');
+
+        const dataUrl = "{% static 'main/data/ua_cities.json' %}";
+        const escapeHtml = (value) => value.replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+        const setOpen = (open) => {
+            suggestions.classList.toggle('show', open);
+        };
+
+        let cities = [];
+
+        const render = (matches) => {
+            const options = matches.map((city) => (
+                `<button type="button" class="city-option" data-value="${escapeHtml(city)}">${escapeHtml(city)}</button>`
+            ));
+            suggestions.innerHTML = options.join('');
+            setOpen(matches.length > 0);
+        };
+
+        const updateList = () => {
+            const query = cityInput.value.trim().toLowerCase();
+            const matches = query
+                ? cities.filter((city) => city.toLowerCase().includes(query)).slice(0, 20)
+                : cities.slice(0, 10);
+            render(matches);
+        };
+
+        fetch(dataUrl)
+            .then((response) => response.json())
+            .then((data) => {
+                cities = Array.isArray(data) ? data : [];
+            })
+            .catch(() => {
+                cities = [];
+                setOpen(false);
+            });
+
+        suggestions.addEventListener('click', (event) => {
+            const option = event.target.closest('.city-option');
+            if (!option) return;
+            cityInput.value = option.dataset.value || '';
+            setOpen(false);
+            cityInput.focus();
+        });
+
+        cityInput.addEventListener('input', updateList);
+        cityInput.addEventListener('focus', updateList);
+
+        document.addEventListener('click', (event) => {
+            if (!suggestions.contains(event.target) && event.target !== cityInput) {
+                setOpen(false);
+            }
+        });
+    })();
+</script>
 {% endblock %}

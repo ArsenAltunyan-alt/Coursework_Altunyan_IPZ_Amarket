@@ -99,12 +99,14 @@ def chat_room(request, room_name):
     if request.headers.get("HX-Request") == "true":
         return render(request, "chat/partials/chat_panel.html", {
             "room_name": room_name,
+            "receiver": receiver,
             "chats": chats,
             "search_query": search_query,
         })
 
     return render(request, "chat/chat.html", {
         "room_name": room_name,
+        "receiver": receiver,
         "chats": chats,
         "user_last_messages": user_last_messages,
         "search_query": search_query,

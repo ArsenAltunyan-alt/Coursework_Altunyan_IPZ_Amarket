@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from allauth.socialaccount.models import SocialAccount
+from announcement.models import Announcement
 from .forms import (
     RegistrationStep1Form,
     RegistrationStep2Form,
@@ -121,6 +122,7 @@ def user_logout(request):
 @login_required
 def profile(request):
     is_google_user = SocialAccount.objects.filter(user=request.user, provider='google').exists()
+    announcements = Announcement.objects.filter(seller=request.user).order_by('-created_at')
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
@@ -133,7 +135,8 @@ def profile(request):
     return render(request, 'accounts/profile.html', {
         'form': form,
         'user': request.user,
-        'is_google_user': is_google_user
+        'is_google_user': is_google_user,
+        'announcements': announcements
     })
 
 

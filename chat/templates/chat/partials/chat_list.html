@@ -1,3 +1,4 @@
+{% load static %}
 <div class="list-group list-group-flush chat-list">
     {% if user_last_messages %}
     {% for item in user_last_messages %}
@@ -8,9 +9,13 @@
         hx-push-url="true"
         class="list-group-item list-group-item-action {% if item.user.username == room_name %} active {% endif %}">
         <div class="d-flex align-items-center gap-3">
-            <img src="https://ui-avatars.com/api/?name={{ item.user.username|urlencode }}&size=64&background=random"
-                alt="{{ item.user.username }} profile" class="rounded-circle"
+            {% if item.user.profile_photo %}
+            <img src="{{ item.user.profile_photo.url }}" alt="{{ item.user.username }} profile"
+                class="rounded-circle" style="width: 44px; height: 44px; object-fit: cover" />
+            {% else %}
+            <img src="{% static 'main/img/avatar.png' %}" alt="Default avatar" class="rounded-circle"
                 style="width: 44px; height: 44px; object-fit: cover" />
+            {% endif %}
             <div class="w-100">
                 <div class="d-flex justify-content-between">
                     <strong class="text-truncate">{{ item.user.username }}</strong>
