@@ -5,6 +5,7 @@ app_name = 'announcement'
 
 urlpatterns = [
     path('create/', views.create_announcement, name='create'),
+    path('ai/describe-title/', views.generate_description_from_title, name='ai_describe_title'),
     path('list/', views.announcement_list, name='list'),
     path('favorites/', views.favorites_list, name='favorites'),
     path('favorites/<int:pk>/', views.toggle_favorite, name='toggle_favorite'),

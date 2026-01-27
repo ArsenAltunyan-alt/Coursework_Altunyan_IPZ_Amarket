@@ -179,6 +179,12 @@
                                     <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
                                     {{ form.description.errors }}
                                 </div>
+                                <div class="d-flex align-items-center gap-2 mt-2">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" id="ai-describe-title-btn">
+                                        Створіть опис із заголовка
+                                    </button>
+                                    <span class="small text-muted" id="ai-describe-title-status"></span>
+                                </div>
                             </div>
 
                             <!-- Images -->
@@ -223,6 +229,13 @@
     const mainImageIndexInput = document.getElementById('id_main_image_index');
     const maxFiles = 10;
     const items = [];
+
+    const getCookie = (name) => {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith(name + '='));
+        return cookieValue ? decodeURIComponent(cookieValue.split('=')[1]) : '';
+    };
 
     const syncInputFiles = () => {
         const dataTransfer = new DataTransfer();
@@ -352,6 +365,49 @@
         imagesInput.value = '';
     });
 
+    // --- AI description by title ---
+    const aiDescribeTitleBtn = document.getElementById('ai-describe-title-btn');
+    const aiDescribeTitleStatus = document.getElementById('ai-describe-title-status');
+    const titleInput = document.getElementById('id_title');
+    const descriptionInput = document.getElementById('id_description');
+
+    if (aiDescribeTitleBtn && titleInput && descriptionInput) {
+        aiDescribeTitleBtn.addEventListener('click', async () => {
+            const title = titleInput.value.trim();
+            if (!title) {
+                aiDescribeTitleStatus.textContent = 'Будь ласка, спочатку введіть заголовок.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', title);
+
+            aiDescribeTitleBtn.disabled = true;
+            aiDescribeTitleStatus.textContent = 'Створення...';
+
+            try {
+                const response = await fetch("{% url 'announcement:ai_describe_title' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: formData,
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    const details = data.details ? ` Details: ${data.details}` : '';
+                    throw new Error((data.error || 'AI error') + details);
+                }
+                descriptionInput.value = data.description || '';
+                aiDescribeTitleStatus.textContent = 'Готово.';
+            } catch (error) {
+                aiDescribeTitleStatus.textContent = error.message || 'Помилка ШІ';
+            } finally {
+                aiDescribeTitleBtn.disabled = false;
+            }
+        });
+    }
+
     // --- Category/Subcategory handling ---
     document.addEventListener('DOMContentLoaded', function () {
         const parentSelect = document.getElementById('id_category_parent');
@@ -440,7 +496,7 @@
                         addressInput.value = data.display_name;
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('Помилка:', error));
         });
 
         // Search by address button
@@ -472,7 +528,7 @@
                             alert('Адресу не знайдено');
                         }
                     })
-                    .catch(error => console.error('Error searching address:', error));
+                    .catch(error => console.error('Помилка пошуку адреси:', error));
             });
         }
     });
