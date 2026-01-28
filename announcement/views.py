@@ -61,7 +61,8 @@ def create_announcement(request):
     return render(request, 'announcement/create_announcement.html', {
         'form': form, 
         'image_form': image_form,
-        'categories': categories
+        'categories': categories,
+        'main_existing_image_id': '',
     })
 
 def announcement_detail(request, pk):
@@ -93,19 +94,78 @@ def edit_announcement(request, pk):
     
     if request.method == 'POST':
         form = AnnouncementForm(request.POST, instance=announcement)
+        image_form = AnnouncementImageForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Оголошення оновлено!')
+
+            delete_ids = request.POST.getlist('delete_images')
+            if delete_ids:
+                AnnouncementImage.objects.filter(announcement=announcement, id__in=delete_ids).delete()
+
+            images = request.FILES.getlist('images')
+            main_image_index = 0
+            try:
+                main_image_index = int(request.POST.get('main_image_index', 0))
+            except ValueError:
+                pass
+
+            main_existing_id = request.POST.get('main_existing_image_id') or ''
+
+            if len(images) > 10:
+                messages.error(request, '????? ??????????? ???????? 10 ????.')
+                categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
+                main_existing_image_id = AnnouncementImage.objects.filter(announcement=announcement, is_main=True).values_list('id', flat=True).first()
+                return render(request, 'announcement/create_announcement.html', {
+                    'form': form,
+                    'image_form': image_form,
+                    'is_edit': True,
+                    'announcement': announcement,
+                    'categories': categories,
+                    'main_existing_image_id': main_existing_image_id or '',
+                })
+
+            if images:
+                if 0 <= main_image_index < len(images):
+                    AnnouncementImage.objects.filter(announcement=announcement, is_main=True).update(is_main=False)
+
+                for i, image in enumerate(images):
+                    is_main = (i == main_image_index)
+                    AnnouncementImage.objects.create(
+                        announcement=announcement,
+                        image=image,
+                        is_main=is_main
+                    )
+
+            if main_existing_id:
+                existing_main = AnnouncementImage.objects.filter(announcement=announcement, id=main_existing_id).first()
+                if existing_main:
+                    AnnouncementImage.objects.filter(announcement=announcement, is_main=True).update(is_main=False)
+                    existing_main.is_main = True
+                    existing_main.save()
+
+            if not AnnouncementImage.objects.filter(announcement=announcement, is_main=True).exists():
+                first_image = AnnouncementImage.objects.filter(announcement=announcement).first()
+                if first_image:
+                    first_image.is_main = True
+                    first_image.save()
+
+            messages.success(request, 'Оголошення успішно оновлено!')
             return redirect('announcement:user_list')
     else:
         form = AnnouncementForm(instance=announcement)
+        image_form = AnnouncementImageForm()
     
     categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
+    main_existing_image_id = AnnouncementImage.objects.filter(announcement=announcement, is_main=True).values_list('id', flat=True).first()
     return render(request, 'announcement/create_announcement.html', {
         'form': form,
+        'image_form': image_form,
         'is_edit': True,
+        'announcement': announcement,
         'categories': categories,
+        'main_existing_image_id': main_existing_image_id or '',
     })
+
 
 @login_required
 def archive_announcement(request, pk):
@@ -133,17 +193,26 @@ def announcement_list(request):
         price__isnull=False,
     ).aggregate(Max('price'))['price__max'] or 0
     
-    # Filter by Category
-    category_slug = request.GET.get('category')
-    if category_slug:
-        selected_category = Category.objects.filter(slug=category_slug).first()
-        if selected_category:
-            if selected_category.parent_id is None:
-                announcements = announcements.filter(
-                    category__in=Category.objects.filter(Q(pk=selected_category.pk) | Q(parent=selected_category))
-                )
-            else:
-                announcements = announcements.filter(category=selected_category)
+    selected_category_parent_ids = set()
+    # Filter by Category (support multiple selections)
+    category_slugs = [slug for slug in request.GET.getlist('category') if slug]
+    if category_slugs:
+        categories_qs = Category.objects.filter(slug__in=category_slugs)
+        for category in categories_qs:
+            selected_category_parent_ids.add(category.parent_id or category.id)
+
+        parent_ids = [c.id for c in categories_qs if c.parent_id is None]
+        child_ids = [c.id for c in categories_qs if c.parent_id is not None]
+        category_filter = Q()
+
+        if parent_ids:
+            parent_filter = Category.objects.filter(parent_id__in=parent_ids)
+            category_filter |= Q(category__in=Category.objects.filter(Q(id__in=parent_ids) | Q(id__in=parent_filter)))
+
+        if child_ids:
+            category_filter |= Q(category_id__in=child_ids)
+
+        announcements = announcements.filter(category_filter)
 
     # Filter by Seller
     seller_username = request.GET.get('seller')
@@ -182,7 +251,8 @@ def announcement_list(request):
         'categories': categories,
         'favorite_ids': favorite_ids,
         'condition_choices': Announcement.CONDITION_CHOICES,
-        'selected_category': category_slug or '',
+        'selected_categories': category_slugs,
+        'selected_category_parent_ids': sorted(selected_category_parent_ids),
         'selected_condition': condition or '',
         'min_price': min_price or '',
         'max_price': max_price or '',
@@ -210,10 +280,20 @@ def toggle_favorite(request, pk):
     announcement = get_object_or_404(Announcement, pk=pk, is_active=True)
     if announcement.favorites.filter(pk=request.user.pk).exists():
         announcement.favorites.remove(request.user)
-        messages.success(request, 'Оголошення видалено з обраного.')
+        message_text = 'Оголошення видалено з обраного.'
+        is_favorite = False
     else:
         announcement.favorites.add(request.user)
-        messages.success(request, 'Оголошення додано до обраного.')
+        message_text = 'Оголошення додано до обраного.'
+        is_favorite = True
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({
+            "message": message_text,
+            "is_favorite": is_favorite,
+        })
+
+    messages.success(request, message_text)
 
     next_url = request.GET.get('next')
     if next_url:

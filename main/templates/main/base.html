@@ -166,16 +166,16 @@
         </div>
     </div>
 
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
+    <div id="global-message-container" class="global-messages">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show global-message" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
     </div>
-    {% endif %}
 
     <main class="site-content flex-grow-1">
         {% block content %}{% endblock %}
@@ -229,23 +229,26 @@
             this.loopNum = 0;
             this.period = parseInt(period, 10) || 2000;
             this.txt = '';
+            this.charIndex = 0;
             this.tick();
             this.isDeleting = false;
         };
         TxtRotate.prototype.tick = function () {
             var i = this.loopNum % this.toRotate.length;
             var fullTxt = this.toRotate[i];
+            var fullChars = Array.from(fullTxt);
             if (this.isDeleting) {
-                this.txt = fullTxt.substring(0, this.txt.length - 1);
+                this.charIndex = Math.max(0, this.charIndex - 1);
             } else {
-                this.txt = fullTxt.substring(0, this.txt.length + 1);
+                this.charIndex = Math.min(fullChars.length, this.charIndex + 1);
             }
+            this.txt = fullChars.slice(0, this.charIndex).join('');
             this.el.innerHTML = '<span class="wrap">' + this.txt + '</span>';
             var delta = 150;
-            if (!this.isDeleting && this.txt === fullTxt) {
+            if (!this.isDeleting && this.charIndex === fullChars.length) {
                 delta = this.period;
                 this.isDeleting = true;
-            } else if (this.isDeleting && this.txt === '') {
+            } else if (this.isDeleting && this.charIndex === 0) {
                 this.isDeleting = false;
                 this.loopNum++;
                 delta = 500;
@@ -261,6 +264,95 @@
                     new TxtRotate(elements[i], JSON.parse(toRotate), period);
                 }
             }
+        });
+    </script>
+    <script>
+        (function () {
+            function getMessageContainer() {
+                return document.getElementById('global-message-container');
+            }
+
+            function showGlobalMessage(text, level) {
+                if (!text) return;
+                var container = getMessageContainer();
+                if (!container) return;
+
+                container.innerHTML = '';
+                var alert = document.createElement('div');
+                alert.className = 'alert alert-' + (level || 'success') + ' alert-dismissible fade show global-message';
+                alert.setAttribute('role', 'alert');
+                alert.textContent = text;
+
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn-close';
+                button.setAttribute('data-bs-dismiss', 'alert');
+                button.setAttribute('aria-label', 'Close');
+                alert.appendChild(button);
+
+                container.appendChild(alert);
+
+                setTimeout(function () {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 3000);
+            }
+
+            document.addEventListener('click', function (event) {
+                var link = event.target.closest('.js-favorite-toggle');
+                if (!link) return;
+
+                event.preventDefault();
+                var url = link.getAttribute('href');
+                if (!url) return;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Request failed');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        var isFavorite = Boolean(data.is_favorite);
+                        link.classList.toggle('is-active', isFavorite);
+
+                        var icon = link.querySelector('i');
+                        if (icon) {
+                            if (icon.classList.contains('ph-heart')) {
+                                icon.classList.toggle('ph-fill', isFavorite);
+                                icon.classList.toggle('ph', !isFavorite);
+                            } else if (icon.classList.contains('fa-heart')) {
+                                icon.classList.toggle('fas', isFavorite);
+                                icon.classList.toggle('far', !isFavorite);
+                                icon.classList.toggle('text-danger', isFavorite);
+                                icon.classList.toggle('text-muted', !isFavorite);
+                            }
+                        }
+
+                        showGlobalMessage(data.message || '', 'success');
+                    })
+                    .catch(function () {
+                        window.location.href = url;
+                    });
+            });
+        })();
+    </script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+        const msg = document.querySelector('.global-message');
+        if (!msg) return;
+        setTimeout(() => {
+        msg.classList.add('is-hiding');
+        setTimeout(() => msg.remove(), 400);
+        }, 3000);
         });
     </script>
     {% block extra_js %}{% endblock %}

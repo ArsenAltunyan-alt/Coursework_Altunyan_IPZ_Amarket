@@ -400,6 +400,35 @@ body {
     color: var(--bs-white);
 }
 
+.global-message {
+    background: #ffffff;
+    color: #111111;
+    border: 1px solid #e5e7eb;
+    margin: 0;
+    max-width: min(480px, calc(100vw - 32px));
+    width: auto !important;
+    display: inline-flex;
+    align-items: center;
+    padding-right: 44px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    pointer-events: auto;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.global-message.is-hiding {
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+}
+
+.global-message.alert {
+    width: auto !important;
+}
+
+.global-message .btn-close {
+    filter: none;
+}
+
 .product .product-item .product-item-inner img {
     transition: 0.5s;
 }

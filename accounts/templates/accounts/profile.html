@@ -373,7 +373,7 @@
                                 </button>
                                 <a href="{% url 'accounts:profile' %}"
                                     class="btn btn-outline-secondary rounded-pill px-4 py-2">
-                                    Cancel
+                                    Скасувати
                                 </a>
                             </div>
                         </form>
@@ -421,16 +421,16 @@
                                             <div class="d-flex flex-wrap gap-2 mt-3">
                                                 <a href="{% url 'announcement:edit' announcement.pk %}"
                                                     class="btn btn-sm btn-outline-primary">
-                                                    Edit
+                                                    Редагувати
                                                 </a>
                                                 <a href="{% url 'announcement:archive' announcement.pk %}"
                                                     class="btn btn-sm btn-outline-warning">
-                                                    {% if announcement.is_active %}Archive{% else %}Restore{% endif %}
+                                                    {% if announcement.is_active %}Архівувати{% else %}Відновити{% endif %}
                                                 </a>
                                                 <a href="{% url 'announcement:delete' announcement.pk %}"
                                                     class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Ви впевнені??');">
-                                                    Delete
+                                                    Видалити
                                                 </a>
                                             </div>
                                         </div>

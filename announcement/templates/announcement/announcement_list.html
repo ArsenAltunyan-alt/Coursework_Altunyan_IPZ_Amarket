@@ -21,47 +21,60 @@
                       hx-get="{% url 'announcement:list' %}"
                       hx-target="#announcement-list"
                       hx-swap="innerHTML"
-                      hx-push-url="true"
-                      hx-trigger="change delay:300ms, keyup delay:300ms from:input">
+                      hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms">
                     <button type="button" class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
                         <i class="ph ph-x"></i>
                     </button>
                     <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
                         <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Категорії</h6>
-                        <ul class="max-h-540 overflow-y-auto scroll-sm">
+                        <div id="category-hidden-inputs">
+                            {% for slug in selected_categories %}
+                            <input type="hidden" name="category" value="{{ slug }}">
+                            {% endfor %}
+                        </div>
+                        <ul class="max-h-540 overflow-y-auto scroll-sm category-list">
                             {% for category in categories %}
                             {% with subcategories=category.subcategories.all %}
                             <li class="mb-24">
                                 {% if subcategories %}
-                                <a class="d-flex justify-content-between align-items-center text-gray-900 hover-text-main-600 category-toggle{% if selected_category == category.slug %} text-main-600{% endif %}"
-                                   href="#"
-                                   role="button"
-                                   data-target="cat-{{ category.id }}"
-                                   aria-controls="cat-{{ category.id }}"
-                                   aria-expanded="{% if selected_category == category.slug %}true{% else %}false{% endif %}">
-                                    {{ category.name }}
-                                    <i class="ph ph-caret-down"></i>
-                                </a>
+                                <div class="d-flex justify-content-between align-items-center gap-8 category-row">
+                                    <button type="button"
+                                            class="category-select d-flex align-items-center gap-8 text-gray-900 hover-text-main-600{% if category.id in selected_category_parent_ids %} text-main-600 is-selected{% endif %}"
+                                            data-kind="parent"
+                                            data-parent-id="{{ category.id }}"
+                                            data-slug="{{ category.slug }}">
+                                        <span>{{ category.name }}</span>
+                                    </button>
+                                    <button type="button"
+                                            class="category-toggle"
+                                            data-target="cat-{{ category.id }}"
+                                            aria-controls="cat-{{ category.id }}"
+                                            aria-expanded="{% if category.id in selected_category_parent_ids %}true{% else %}false{% endif %}">
+                                        <i class="ph ph-caret-down"></i>
+                                    </button>
+                                </div>
 
-                                <ul class="collapse mt-12 ps-16{% if selected_category == category.slug %} show{% endif %}" id="cat-{{ category.id }}">
+                                <ul class="collapse mt-12 ps-16{% if category.id in selected_category_parent_ids %} show{% endif %}" id="cat-{{ category.id }}">
                                     {% for subcategory in subcategories %}
                                     <li class="mb-8">
-                                        <a href="?category={{ subcategory.slug }}"
-                                           hx-get="{% url 'announcement:list' %}?category={{ subcategory.slug }}"
-                                           hx-target="#announcement-list"
-                                           hx-swap="innerHTML"
-                                           hx-push-url="true"
-                                           class="text-gray-700 hover-text-main-600{% if selected_category == subcategory.slug %} text-main-600{% endif %}">{{ subcategory.name }}</a>
+                                        <button type="button"
+                                                class="category-select d-flex align-items-center gap-8 text-gray-700 hover-text-main-600{% if subcategory.slug in selected_categories %} text-main-600 is-selected{% endif %}"
+                                                data-kind="child"
+                                                data-parent-id="{{ category.id }}"
+                                                data-slug="{{ subcategory.slug }}">
+                                            <span>{{ subcategory.name }}</span>
+                                        </button>
                                     </li>
                                     {% endfor %}
                                 </ul>
                                 {% else %}
-                                <a href="?category={{ category.slug }}"
-                                   hx-get="{% url 'announcement:list' %}?category={{ category.slug }}"
-                                   hx-target="#announcement-list"
-                                   hx-swap="innerHTML"
-                                   hx-push-url="true"
-                                   class="text-gray-900 hover-text-main-600{% if selected_category == category.slug %} text-main-600{% endif %}">{{ category.name }}</a>
+                                <button type="button"
+                                        class="category-select d-flex align-items-center gap-8 text-gray-900 hover-text-main-600{% if category.slug in selected_categories %} text-main-600 is-selected{% endif %}"
+                                        data-kind="parent"
+                                        data-parent-id="{{ category.id }}"
+                                        data-slug="{{ category.slug }}">
+                                    <span>{{ category.name }}</span>
+                                </button>
                                 {% endif %}
                             </li>
                             {% endwith %}
@@ -175,6 +188,105 @@
                 toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
             });
         });
+    })();
+</script>
+<script>
+    (function () {
+        var form = document.querySelector('.announcement-page .shop-sidebar');
+        if (!form) return;
+
+        var hiddenContainer = form.querySelector('#category-hidden-inputs');
+        var items = Array.prototype.slice.call(form.querySelectorAll('.category-select[data-slug]'));
+        if (!items.length || !hiddenContainer) return;
+
+        var byParent = new Map();
+        items.forEach(function (item) {
+            if (item.dataset.kind === 'child') {
+                var parentId = item.dataset.parentId;
+                if (!byParent.has(parentId)) {
+                    byParent.set(parentId, []);
+                }
+                byParent.get(parentId).push(item);
+            }
+        });
+
+        function setSelected(item, selected) {
+            item.classList.toggle('is-selected', selected);
+            item.classList.toggle('text-main-600', selected);
+        }
+
+        function updateHiddenInputs() {
+            hiddenContainer.innerHTML = '';
+            var selected = new Set();
+            items.forEach(function (item) {
+                if (!item.classList.contains('is-selected')) {
+                    return;
+                }
+                if (item.dataset.kind === 'parent' && byParent.has(item.dataset.parentId)) {
+                    return;
+                }
+                selected.add(item.dataset.slug);
+            });
+            selected.forEach(function (slug) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'category';
+                input.value = slug;
+                hiddenContainer.appendChild(input);
+            });
+        }
+
+        function getParentItem(parentId) {
+            return items.find(function (item) {
+                return item.dataset.kind === 'parent' && item.dataset.parentId === parentId;
+            });
+        }
+
+        function toggleItem(item) {
+            var willSelect = !item.classList.contains('is-selected');
+            var parentId = item.dataset.parentId;
+            var isParent = item.dataset.kind === 'parent';
+
+            if (isParent) {
+                setSelected(item, willSelect);
+                var children = byParent.get(parentId) || [];
+                children.forEach(function (child) {
+                    setSelected(child, willSelect);
+                });
+            } else {
+                setSelected(item, willSelect);
+                var parentItem = getParentItem(parentId);
+                if (parentItem) {
+                    if (willSelect) {
+                        setSelected(parentItem, true);
+                    } else {
+                        var siblings = byParent.get(parentId) || [];
+                        var anySelected = siblings.some(function (child) {
+                            return child.classList.contains('is-selected');
+                        });
+                        if (!anySelected) {
+                            setSelected(parentItem, false);
+                        }
+                    }
+                }
+            }
+
+            updateHiddenInputs();
+            if (window.htmx) {
+                window.htmx.trigger(form, 'categories-changed');
+            } else {
+                form.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        items.forEach(function (item) {
+            item.addEventListener('click', function (event) {
+                event.preventDefault();
+                toggleItem(item);
+            });
+        });
+
+        updateHiddenInputs();
     })();
 </script>
 {% endblock %}

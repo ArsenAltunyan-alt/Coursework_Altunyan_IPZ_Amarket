@@ -67,6 +67,7 @@
     .image-remove-btn:hover {
         color: #c62828;
     }
+
 </style>
 {% endblock %}
 
@@ -86,6 +87,7 @@
                         {{ form.latitude }}
                         {{ form.longitude }}
                         {{ image_form.main_image_index }}
+                        <input type="hidden" name="main_existing_image_id" id="id_main_existing_image_id" value="{{ main_existing_image_id|default:'' }}">
 
                         <div class="row g-4 wow fadeInUp" data-wow-delay="0.1s">
                             <!-- Title -->
@@ -193,7 +195,18 @@
                                 {{ image_form.images }}
                                 <div class="form-text text-muted mt-1">Оберіть яке фото буде головне</div>
                                 {{ image_form.images.errors }}
-                                <div id="image-preview" class="image-preview-grid mt-3"></div>
+                                <div id="existing-image-deletions"></div>
+                                <div id="image-preview" class="image-preview-grid mt-3">
+                                    {% if announcement and announcement.images.all %}
+                                        {% for image in announcement.images.all %}
+                                        <div class="image-preview-item" data-existing-id="{{ image.id }}">
+                                            <img src="{{ image.image.url }}" alt="{{ announcement.title }}">
+                                            <input type="radio" name="main_selection_visual" data-existing-id="{{ image.id }}" class="form-check-input position-absolute top-0 start-0 m-2" {% if image.is_main %}checked{% endif %}>
+                                            <button type="button" class="image-remove-btn" data-existing-image-id="{{ image.id }}" aria-label="Remove image">❌</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Submit Button -->
@@ -223,13 +236,6 @@
 
 <!-- Scripts -->
 <script>
-        // --- Image handling script ---
-    const imagesInput = document.getElementById('id_images');
-    const previewContainer = document.getElementById('image-preview');
-    const mainImageIndexInput = document.getElementById('id_main_image_index');
-    const maxFiles = 10;
-    const items = [];
-
     const getCookie = (name) => {
         const cookieValue = document.cookie
             .split('; ')
@@ -237,133 +243,192 @@
         return cookieValue ? decodeURIComponent(cookieValue.split('=')[1]) : '';
     };
 
-    const syncInputFiles = () => {
-        const dataTransfer = new DataTransfer();
-        items.forEach(item => dataTransfer.items.add(item.file));
-        imagesInput.files = dataTransfer.files;
-    };
+        // --- Image handling script ---
+    const imagesInput = document.getElementById('id_images');
+    const previewContainer = document.getElementById('image-preview');
+    const mainImageIndexInput = document.getElementById('id_main_image_index');
+    const mainExistingInput = document.getElementById('id_main_existing_image_id');
+    const existingDeletions = document.getElementById('existing-image-deletions');
+    if (imagesInput && previewContainer && mainImageIndexInput) {
+        const maxFiles = 10;
+        const items = [];
+    
+            
+        const syncInputFiles = () => {
+            const dataTransfer = new DataTransfer();
+            items.forEach(item => dataTransfer.items.add(item.file));
+            imagesInput.files = dataTransfer.files;
+        };
+    
+        const setMainIndex = (index) => {
+            if (items.length === 0) {
+                mainImageIndexInput.value = '';
+                return;
+            }
 
-    const setMainIndex = (index) => {
-        if (items.length === 0) {
-            mainImageIndexInput.value = '';
-            return;
-        }
+            const safeIndex = Math.max(0, Math.min(index, items.length - 1));
+            mainImageIndexInput.value = safeIndex;
+            if (mainExistingInput) {
+                mainExistingInput.value = '';
+            }
+            previewContainer.querySelectorAll('input[name="main_selection_visual"]').forEach((input) => {
+                const dataIndex = input.getAttribute('data-new-index');
+                if (dataIndex !== null) {
+                    input.checked = parseInt(dataIndex, 10) === safeIndex;
+                }
+            });
+        };
+    
+        const reindexItems = () => {
+            items.forEach((item, index) => {
+                item.element.dataset.index = index;
+            });
+        };
+    
+        const createPreviewItem = (file, index) => {
+            const item = document.createElement('div');
+            item.className = 'image-preview-item';
+            item.dataset.index = index;
+    
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'w-100';
+            img.title = 'Click to set as main image';
+    
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'main_selection_visual';
+            radio.dataset.newIndex = index;
+            radio.className = 'form-check-input position-absolute top-0 start-0 m-2';
+    
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'image-remove-btn';
+            removeBtn.setAttribute('aria-label', 'Remove image');
+            removeBtn.textContent = '❌';
+    
+            item.appendChild(img);
+            item.appendChild(radio);
+            item.appendChild(removeBtn);
+            previewContainer.appendChild(item);
+    
+            return { file, url: img.src, element: item };
+        };
+    
+        const removeItemAt = (index) => {
+            const removed = items.splice(index, 1)[0];
+            if (!removed) {
+                return;
+            }
+    
+            URL.revokeObjectURL(removed.url);
+            removed.element.remove();
+            reindexItems();
+            syncInputFiles();
+    
+            if (items.length === 0) {
+                mainImageIndexInput.value = '';
+                return;
+            }
+    
+            const currentMain = parseInt(mainImageIndexInput.value, 10);
+            if (Number.isNaN(currentMain) || currentMain === index) {
+                setMainIndex(0);
+            } else if (currentMain > index) {
+                setMainIndex(currentMain - 1);
+            } else {
+                setMainIndex(currentMain);
+            }
+        };
+    
+        previewContainer.addEventListener('click', function (event) {
+            const itemElement = event.target.closest('.image-preview-item');
+            if (!itemElement) {
+                return;
+            }
 
-        const safeIndex = Math.max(0, Math.min(index, items.length - 1));
-        mainImageIndexInput.value = safeIndex;
-        previewContainer.querySelectorAll('input[name="main_selection_visual"]').forEach((input, i) => {
-            input.checked = i === safeIndex;
+            const existingId = itemElement.getAttribute('data-existing-id');
+            const removeBtn = event.target.closest('.image-remove-btn');
+            if (removeBtn) {
+                if (existingId && existingDeletions) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'delete_images';
+                    input.value = existingId;
+                    existingDeletions.appendChild(input);
+
+                    if (mainExistingInput && mainExistingInput.value === existingId) {
+                        mainExistingInput.value = '';
+                    }
+
+                    itemElement.remove();
+                    return;
+                }
+
+                const index = parseInt(itemElement.dataset.index, 10);
+                if (!Number.isNaN(index)) {
+                    removeItemAt(index);
+                }
+                return;
+            }
+
+            if (event.target.matches('img')) {
+                const radio = itemElement.querySelector('input[name="main_selection_visual"]');
+                if (radio) {
+                    radio.click();
+                }
+            }
         });
-    };
 
-    const reindexItems = () => {
-        items.forEach((item, index) => {
-            item.element.dataset.index = index;
-        });
-    };
+        previewContainer.addEventListener('change', function (event) {
+            const radio = event.target;
+            if (!radio.matches('input[name="main_selection_visual"]')) {
+                return;
+            }
 
-    const createPreviewItem = (file, index) => {
-        const item = document.createElement('div');
-        item.className = 'image-preview-item';
-        item.dataset.index = index;
+            const existingId = radio.getAttribute('data-existing-id');
+            if (existingId && mainExistingInput) {
+                mainExistingInput.value = existingId;
+                mainImageIndexInput.value = '';
+                return;
+            }
 
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.className = 'w-100';
-        img.title = 'Click to set as main image';
-
-        const radio = document.createElement('input');
-        radio.type = 'radio';
-        radio.name = 'main_selection_visual';
-        radio.className = 'form-check-input position-absolute top-0 start-0 m-2';
-
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'image-remove-btn';
-        removeBtn.setAttribute('aria-label', 'Remove image');
-        removeBtn.textContent = '❌';
-
-        item.appendChild(img);
-        item.appendChild(radio);
-        item.appendChild(removeBtn);
-        previewContainer.appendChild(item);
-
-        return { file, url: img.src, element: item };
-    };
-
-    const removeItemAt = (index) => {
-        const removed = items.splice(index, 1)[0];
-        if (!removed) {
-            return;
-        }
-
-        URL.revokeObjectURL(removed.url);
-        removed.element.remove();
-        reindexItems();
-        syncInputFiles();
-
-        if (items.length === 0) {
-            mainImageIndexInput.value = '';
-            return;
-        }
-
-        const currentMain = parseInt(mainImageIndexInput.value, 10);
-        if (Number.isNaN(currentMain) || currentMain === index) {
-            setMainIndex(0);
-        } else if (currentMain > index) {
-            setMainIndex(currentMain - 1);
-        } else {
-            setMainIndex(currentMain);
-        }
-    };
-
-    previewContainer.addEventListener('click', function (event) {
-        const itemElement = event.target.closest('.image-preview-item');
-        if (!itemElement) {
-            return;
-        }
-
-        const index = parseInt(itemElement.dataset.index, 10);
-        if (Number.isNaN(index)) {
-            return;
-        }
-
-        if (event.target.closest('.image-remove-btn')) {
-            removeItemAt(index);
-            return;
-        }
-
-        if (event.target.matches('img') || event.target.matches('input[type="radio"]')) {
-            setMainIndex(index);
-        }
-    });
-
-    imagesInput.addEventListener('change', function (event) {
-        const newFiles = Array.from(event.target.files);
-        if (newFiles.length === 0) {
-            return;
-        }
-
-        if (items.length + newFiles.length > maxFiles) {
-            alert('Maximum 10 photos allowed.');
-            imagesInput.value = '';
-            return;
-        }
-
-        newFiles.forEach(file => {
-            const item = createPreviewItem(file, items.length);
-            items.push(item);
+            const newIndex = radio.getAttribute('data-new-index');
+            if (newIndex !== null) {
+                if (mainExistingInput) {
+                    mainExistingInput.value = '';
+                }
+                setMainIndex(parseInt(newIndex, 10));
+            }
         });
 
-        if (mainImageIndexInput.value === '' && items.length > 0) {
-            setMainIndex(0);
-        } else {
-            setMainIndex(parseInt(mainImageIndexInput.value, 10));
-        }
-
-        syncInputFiles();
-        imagesInput.value = '';
-    });
+        imagesInput.addEventListener('change', function (event) {
+            const newFiles = Array.from(event.target.files);
+            if (newFiles.length === 0) {
+                return;
+            }
+    
+            if (items.length + newFiles.length > maxFiles) {
+                alert('Maximum 10 photos allowed.');
+                    return;
+            }
+    
+            newFiles.forEach(file => {
+                const item = createPreviewItem(file, items.length);
+                items.push(item);
+            });
+    
+            if (mainImageIndexInput.value === '' && items.length > 0) {
+                setMainIndex(0);
+            } else {
+                setMainIndex(parseInt(mainImageIndexInput.value, 10));
+            }
+    
+            syncInputFiles();
+        });
+    
+        
+    }
 
     // --- AI description by title ---
     const aiDescribeTitleBtn = document.getElementById('ai-describe-title-btn');
