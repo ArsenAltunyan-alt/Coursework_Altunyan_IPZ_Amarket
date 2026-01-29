@@ -170,5 +170,48 @@
 
 
 
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var toggleButtons = document.querySelectorAll('.password-toggle-btn');
+        if (!toggleButtons.length) {
+            return;
+        }
+
+        toggleButtons.forEach(function (btn) {
+            var input = btn.previousElementSibling;
+            if (!input) {
+                return;
+            }
+
+            var showPassword = function () {
+                input.type = 'text';
+                input.classList.add('password-revealed');
+                btn.style.color = 'var(--primary)';
+            };
+
+            var hidePassword = function () {
+                input.type = 'password';
+                input.classList.remove('password-revealed');
+                btn.style.color = '';
+            };
+
+            btn.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                showPassword();
+            });
+
+            btn.addEventListener('mouseup', hidePassword);
+            btn.addEventListener('mouseleave', hidePassword);
+
+            btn.addEventListener('touchstart', function (event) {
+                event.preventDefault();
+                showPassword();
+            });
+
+            btn.addEventListener('touchend', hidePassword);
+            btn.addEventListener('touchcancel', hidePassword);
+        });
+    });
+
 })(jQuery);
 

@@ -3,7 +3,7 @@
 {% block title %}Видалити акаунт{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5 auth-page">
     <div class="row justify-content-center">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm p-4 p-md-5" style="border-radius: 20px;">
@@ -19,7 +19,7 @@
                     </div>
                     {% endif %}
 
-                    <div class="mb-3">
+                    <div class="form-group mb-3">
                         <label class="form-label fw-bold">{{ form.password.label }}</label>
                         {{ form.password }}
                         {% if form.password.errors %}

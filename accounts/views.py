@@ -154,7 +154,7 @@ def post_login_redirect(request):
 def password_change(request):
     is_google_user = SocialAccount.objects.filter(user=request.user, provider='google').exists()
     if is_google_user:
-        messages.info(request, 'Password changes are not available for Google accounts.')
+        messages.info(request, 'Зміна паролю недоступна для користувачів Google.')
         return redirect('accounts:profile')
 
     if request.method == 'POST':
@@ -162,7 +162,7 @@ def password_change(request):
         if form.is_valid():
             form.save()
             update_session_auth_hash(request, request.user)
-            messages.success(request, 'Password updated successfully.')
+            messages.success(request, 'Пароль успішно оновлено.')
             return redirect('accounts:profile')
     else:
         form = CustomPasswordChangeForm(user=request.user)
@@ -180,7 +180,7 @@ def account_delete(request):
             user = request.user
             logout(request)
             user.delete()
-            messages.success(request, 'Your account has been deleted.')
+            messages.success(request, 'Ваш обліковий запис успішно видалено.')
             return redirect('accounts:login')
     else:
         form = AccountDeleteForm(user=request.user)

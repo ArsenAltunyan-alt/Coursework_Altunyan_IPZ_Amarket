@@ -1,6 +1,7 @@
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.exceptions import ImmediateHttpResponse
+from django.contrib import messages
 from django.shortcuts import redirect
 
 
@@ -37,6 +38,8 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             request.session['google_first_name'] = given_name
             request.session['google_last_name'] = family_name
             request.session.save()
+
+            messages.warning(request, 'Для початку зареєструйтесь в системі.')
             
             raise ImmediateHttpResponse(redirect('accounts:register_step1'))
     
@@ -81,7 +84,6 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         user = request.user
         if user.is_authenticated:
-            if not user.phone_number:
-                return '/accounts/register/step2/'
+            return '/accounts/profile/'
         
-        return '/accounts/profile/'
+        
