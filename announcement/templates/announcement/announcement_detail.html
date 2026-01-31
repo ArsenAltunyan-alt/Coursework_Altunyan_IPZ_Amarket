@@ -1,6 +1,8 @@
 {% extends 'main/base.html' %}
 {% load static %}
 {% load l10n %}
+
+{% block body_class %}has-ai-assistant{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'main/announcement_assets/css/select2.min.css' %}">
 <link rel="stylesheet" href="{% static 'main/announcement_assets/css/slick.css' %}">
@@ -233,4 +235,172 @@
         </div>
     </div>
 </div>
+
+<div class="ai-assistant"
+     data-ai-assistant
+     data-endpoint="{% url 'assistant:message' %}"
+     data-inactive-img="{% static 'main/img/inactive.png' %}"
+     data-active-img="{% static 'main/img/active.png' %}"
+     data-generate-img="{% static 'main/img/generate.gif' %}"
+     data-speaks-img="{% static 'main/img/speaks.gif' %}">
+    <div class="ai-assistant__panel" role="dialog" aria-label="AI assistant">
+        <div class="ai-assistant__header">
+            <div class="ai-assistant__title">
+                <div>Чат з AI-лисичкою</div>
+            </div>
+            <button class="ai-assistant__close" type="button" aria-label="Закрити">×</button>
+        </div>
+        <div class="ai-assistant__body">
+            <div class="ai-assistant__messages">
+                <div class="ai-assistant__bubble">
+                    Привіт! Я ваш AI-помічник<br>Чим можу допомогти?
+                </div>
+            </div>
+        </div>
+        <div class="ai-assistant__footer">
+            <div class="ai-assistant__input-wrap">
+                <input class="ai-assistant__input" type="text" placeholder="Напишіть повідомлення...">
+                <button class="ai-assistant__send" type="button" aria-label="Надіслати">
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <button class="ai-assistant__toggle" type="button" aria-label="Відкрити помічника">
+        <img src="{% static 'main/img/assistant/inactive.png' %}" alt="AI">
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var widget = document.querySelector('[data-ai-assistant]');
+        if (!widget) return;
+        var toggle = widget.querySelector('.ai-assistant__toggle');
+        var closeBtn = widget.querySelector('.ai-assistant__close');
+
+        function closeWidget() {
+            widget.classList.remove('is-open');
+        }
+
+        var input = widget.querySelector('.ai-assistant__input');
+        var sendBtn = widget.querySelector('.ai-assistant__send');
+        var messages = widget.querySelector('.ai-assistant__messages');
+        var endpoint = widget.getAttribute('data-endpoint');
+
+        function getCookie(name) {
+            var value = '; ' + document.cookie;
+            var parts = value.split('; ' + name + '=');
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+
+        function setAvatarState(state) {
+            if (!avatar) return;
+            var map = {
+                inactive: widget.getAttribute('data-inactive-img'),
+                active: widget.getAttribute('data-active-img'),
+                generate: widget.getAttribute('data-generate-img'),
+                speaks: widget.getAttribute('data-speaks-img')
+            };
+            if (map[state]) {
+                avatar.src = map[state];
+            }
+        }
+
+        function appendBubble(text, isUser) {
+            var bubble = document.createElement('div');
+            bubble.className = 'ai-assistant__bubble' + (isUser ? ' ai-assistant__bubble--user' : '');
+            bubble.innerHTML = text;
+            messages.appendChild(bubble);
+            messages.scrollTop = messages.scrollHeight;
+            return bubble;
+        }
+
+        function appendItems(items) {
+            if (!items || !items.length) return;
+            var list = document.createElement('div');
+            list.className = 'ai-assistant__items';
+            items.forEach(function (item) {
+                var card = document.createElement('a');
+                card.className = 'ai-assistant__item';
+                card.href = item.url;
+                card.innerHTML =
+                    (item.image ? '<img src="' + item.image + '" alt="">' : '') +
+                    '<div>' +
+                    '<div class="ai-assistant__item-title">' + item.title + '</div>' +
+                    '<div class="ai-assistant__item-price">' +
+                    (item.price ? (item.price + ' грн') : 'Договірна') +
+                    '</div></div>';
+                list.appendChild(card);
+            });
+            messages.appendChild(list);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendMessage() {
+            var text = (input.value || '').trim();
+            if (!text || !endpoint) return;
+            input.value = '';
+            appendBubble(text, true);
+
+            sendBtn.disabled = true;
+            var typing = appendBubble('Думаю над відповіддю...', false);
+            setAvatarState('generate');
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ message: text }),
+                credentials: 'same-origin',
+            })
+            .then(function (resp) {
+                if (!resp.ok) throw new Error('Request failed');
+                return resp.json();
+            })
+            .then(function (data) {
+                typing.remove();
+                setAvatarState('speaks');
+                appendBubble(data.reply || 'Ось що знайшов(ла).', false);
+                if (data.questions && data.questions.length) {
+                    appendBubble('Уточніть, будь ласка: ' + data.questions.join(' '), false);
+                }
+                appendItems(data.items || []);
+                setTimeout(function () {
+                    setAvatarState('active');
+                }, 800);
+            })
+            .catch(function () {
+                typing.remove();
+                appendBubble('Вибачте, сталася помилка. Спробуйте ще раз.', false);
+                setAvatarState('active');
+            })
+            .finally(function () {
+                sendBtn.disabled = false;
+            });
+        }
+
+        toggle.addEventListener('click', function () {
+            widget.classList.toggle('is-open');
+            setAvatarState(widget.classList.contains('is-open') ? 'active' : 'inactive');
+        });
+        closeBtn.addEventListener('click', function () {
+            closeWidget();
+            setAvatarState('inactive');
+        });
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        var avatar = widget.querySelector('.ai-assistant__toggle img');
+        setAvatarState('inactive');
+    })();
+</script>
 {% endblock %}

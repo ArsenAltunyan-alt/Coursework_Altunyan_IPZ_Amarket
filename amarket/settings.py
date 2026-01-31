@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'main',
     'announcement',
     'chat',
+    'assistant',
 ]
 
 MIDDLEWARE = [

@@ -9,6 +9,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),  
     path('accounts/', include('allauth.urls')),  
     path('announcement/', include('announcement.urls')),
+    path('assistant/', include('assistant.urls')),
     path('ws/chat/', include('chat.urls')),
 ]
 
