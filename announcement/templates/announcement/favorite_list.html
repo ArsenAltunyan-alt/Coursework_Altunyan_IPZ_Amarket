@@ -4,59 +4,58 @@
 <div class="container mt-5 mb-5">
     <h2 class="mb-4">Обране</h2>
 
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="list-group favorite-list" data-favorites-list>
         {% for announcement in announcements %}
-        <div class="col">
-            <div class="card h-100 shadow-sm">
+        <div class="list-group-item py-3 favorite-list__item" data-favorite-item>
+            <div class="d-flex gap-3 align-items-start flex-column flex-md-row">
                 {% with main_image=announcement.get_main_image %}
                 <a href="{% url 'announcement:detail' announcement.pk %}" class="text-decoration-none text-dark">
                     {% if main_image %}
-                    <img src="{{ main_image.url }}" class="card-img-top" alt="{{ announcement.title }}"
-                        style="height: 200px; object-fit: cover;">
+                    <img src="{{ main_image.url }}" alt="{{ announcement.title }}"
+                        class="favorite-list__thumb-img">
                     {% else %}
-                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center"
-                        style="height: 200px;">
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center favorite-list__thumb-placeholder">
                         <span></span>
                     </div>
                     {% endif %}
                 </a>
                 {% endwith %}
 
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h5 class="card-title mb-0">
-                            <a href="{% url 'announcement:detail' announcement.pk %}"
-                                class="text-decoration-none text-dark">
-                                {{ announcement.title }}
-                            </a>
-                        </h5>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <h5 class="mb-1">
+                                <a href="{% url 'announcement:detail' announcement.pk %}"
+                                    class="text-decoration-none text-dark">
+                                    {{ announcement.title }}
+                                </a>
+                            </h5>
+                            <div class="text-muted mb-2">
+                                {{ announcement.price|default:"Ціна не вказана" }}
+                                {% if announcement.price %}UAH{% endif %}
+                            </div>
+                        </div>
                         <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}"
-                            class="text-decoration-none">
+                            class="text-decoration-none js-favorite-toggle is-active" aria-label="Toggle favorite">
                             <i class="fas fa-heart text-danger"></i>
                         </a>
                     </div>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ announcement.price|default:"Ціна не вказана" }}
-                        {% if announcement.price %}UAH{% endif %}
-                    </h6>
-                    <p class="card-text text-truncate">{{ announcement.description }}</p>
-                </div>
-                <div class="card-footer bg-transparent border-top-0 small text-muted">
-                    <div class="d-flex justify-content-between">
-                        <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:15 }}</span>
+
+                    <p class="mb-2 favorite-list__desc">{{ announcement.description|striptags }}</p>
+
+                    <div class="small text-muted d-flex flex-wrap gap-3 align-items-center favorite-list__meta">
+                        <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:30 }}</span>
                         <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
+                        {% if announcement.category %}
+                        <span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span>
+                        {% endif %}
                     </div>
-                    {% if announcement.category %}
-                    <div class="mt-1"><span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span></div>
-                    {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                У вас поки не має жодного обраного оголошення.
-            </div>
+        <div class="alert alert-info text-center" data-favorites-empty>
+            У вас поки немає жодного обраного оголошення.
         </div>
         {% endfor %}
     </div>

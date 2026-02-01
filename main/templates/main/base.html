@@ -345,6 +345,18 @@
                             }
                         }
 
+                        var favoriteItem = link.closest('[data-favorite-item]');
+                        if (favoriteItem && !isFavorite) {
+                            var list = favoriteItem.closest('[data-favorites-list]');
+                            favoriteItem.remove();
+                            if (list && !list.querySelector('[data-favorite-item]')) {
+                                var emptyState = list.querySelector('[data-favorites-empty]');
+                                if (emptyState) {
+                                    emptyState.style.display = '';
+                                }
+                            }
+                        }
+
                         showGlobalMessage(data.message || '', 'success');
                     })
                     .catch(function () {

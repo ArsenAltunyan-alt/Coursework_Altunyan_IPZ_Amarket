@@ -1537,3 +1537,39 @@ body {
         width: min(92vw, 320px);
     }
 }
+/* Favorites list layout */
+.favorite-list .favorite-list__thumb-img,
+.favorite-list .favorite-list__thumb-placeholder{
+    width: 160px !important;
+    height: 110px !important;
+    border-radius: 8px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+}
+
+.favorite-list .favorite-list__desc{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 991px) {
+    .favorite-list .favorite-list__thumb-img,
+    .favorite-list .favorite-list__thumb-placeholder{
+        width: 140px !important;
+        height: 100px !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .favorite-list .favorite-list__thumb-img,
+    .favorite-list .favorite-list__thumb-placeholder{
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 4 / 3;
+    }
+}
