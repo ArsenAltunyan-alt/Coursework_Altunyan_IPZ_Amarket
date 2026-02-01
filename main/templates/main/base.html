@@ -363,6 +363,132 @@
                         window.location.href = url;
                     });
             });
+
+            function updateEmptyState(list) {
+                if (!list) return;
+                var emptyState = list.querySelector('[data-empty-state]');
+                if (!emptyState) return;
+                var hasItems = Boolean(list.querySelector('[data-announcement-item]'));
+                emptyState.style.display = hasItems ? 'none' : '';
+            }
+
+            function moveAnnouncementItem(item, isActive) {
+                var targetList = document.querySelector(
+                    '[data-announcements-list="' + (isActive ? 'active' : 'archived') + '"]'
+                );
+                if (!targetList) return;
+
+                var insertBefore = targetList.querySelector('[data-empty-state]');
+                targetList.insertBefore(item, insertBefore || null);
+                updateEmptyState(targetList);
+            }
+
+            function updateArchiveBadge(item, isActive) {
+                var badge = item.querySelector('[data-archive-badge]');
+                if (isActive) {
+                    if (badge) badge.remove();
+                    return;
+                }
+
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'badge bg-warning text-dark align-self-start';
+                    badge.setAttribute('data-archive-badge', '');
+                    badge.textContent = 'Архівовано';
+                    var headerRow = item.querySelector('.d-flex.justify-content-between');
+                    if (headerRow) {
+                        headerRow.appendChild(badge);
+                    }
+                }
+            }
+
+            function updateArchiveButton(button, isActive) {
+                if (!button) return;
+                var archiveText = button.getAttribute('data-archive-text') || 'Архівувати';
+                var restoreText = button.getAttribute('data-restore-text') || 'Відновити';
+                button.textContent = isActive ? archiveText : restoreText;
+            }
+
+            document.addEventListener('click', function (event) {
+                if (event.defaultPrevented) return;
+
+                var archiveButton = event.target.closest('.js-announcement-archive');
+                if (archiveButton) {
+                    event.preventDefault();
+                    var url = archiveButton.getAttribute('href');
+                    if (!url) return;
+
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Request failed');
+                            }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            var isActive = Boolean(data.is_active);
+                            var item = archiveButton.closest('[data-announcement-item]');
+                            var currentList = item ? item.closest('[data-announcements-list]') : null;
+
+                            updateArchiveBadge(item, isActive);
+                            updateArchiveButton(archiveButton, isActive);
+
+                            if (item) {
+                                moveAnnouncementItem(item, isActive);
+                                updateEmptyState(currentList);
+                            }
+
+                            showGlobalMessage(data.message || '', 'success');
+                        })
+                        .catch(function () {
+                            window.location.href = url;
+                        });
+
+                    return;
+                }
+
+                var deleteButton = event.target.closest('.js-announcement-delete');
+                if (!deleteButton) return;
+
+                event.preventDefault();
+                var deleteUrl = deleteButton.getAttribute('href');
+                if (!deleteUrl) return;
+
+                fetch(deleteUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Request failed');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data.deleted) {
+                            throw new Error('Delete failed');
+                        }
+                        var item = deleteButton.closest('[data-announcement-item]');
+                        var list = item ? item.closest('[data-announcements-list]') : null;
+                        if (item) {
+                            item.remove();
+                            updateEmptyState(list);
+                        }
+                        showGlobalMessage(data.message || '', 'success');
+                    })
+                    .catch(function () {
+                        window.location.href = deleteUrl;
+                    });
+            });
         })();
     </script>
     <script>

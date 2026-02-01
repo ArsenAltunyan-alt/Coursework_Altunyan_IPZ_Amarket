@@ -36,7 +36,7 @@ def create_announcement(request):
                 pass
             
             if len(images) > 10:
-                messages.error(request, 'Можна завантажити максимум 10 фото.')
+                messages.error(request, 'Ви можете завантажити до 10 фотографій.')
                 announcement.delete() 
                 return render(request, 'announcement/create_announcement.html', {'form': form, 'image_form': image_form})
 
@@ -84,7 +84,12 @@ def announcement_detail(request, pk):
 @login_required
 def user_announcements(request):
     announcements = Announcement.objects.filter(seller=request.user).order_by('-created_at')
-    return render(request, 'announcement/user_announcements.html', {'announcements': announcements})
+    active_announcements = announcements.filter(is_active=True)
+    archived_announcements = announcements.filter(is_active=False)
+    return render(request, 'announcement/user_announcements.html', {
+        'active_announcements': active_announcements,
+        'archived_announcements': archived_announcements,
+    })
 
 @login_required
 def edit_announcement(request, pk):
@@ -112,7 +117,7 @@ def edit_announcement(request, pk):
             main_existing_id = request.POST.get('main_existing_image_id') or ''
 
             if len(images) > 10:
-                messages.error(request, '????? ??????????? ???????? 10 ????.')
+                messages.error(request, 'Ви можете завантажити до 10 фотографій.')
                 categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
                 main_existing_image_id = AnnouncementImage.objects.filter(announcement=announcement, is_main=True).values_list('id', flat=True).first()
                 return render(request, 'announcement/create_announcement.html', {
@@ -173,8 +178,15 @@ def archive_announcement(request, pk):
     if announcement.seller == request.user:
         announcement.is_active = not announcement.is_active
         announcement.save()
-        status = "архівовано" if not announcement.is_active else "відновлено"
+        status = "archived" if not announcement.is_active else "restored"
         messages.success(request, f'Оголошення {status}!')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'is_active': announcement.is_active,
+                'message': f'Оголошення {status}!',
+            })
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Not allowed'}, status=403)
     return redirect('announcement:user_list')
 
 @login_required
@@ -183,6 +195,13 @@ def delete_announcement(request, pk):
     if announcement.seller == request.user:
         announcement.delete()
         messages.success(request, 'Оголошення видалено!')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'deleted': True,
+                'message': 'Оголошення видалено!',
+            })
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Not allowed'}, status=403)
     return redirect('announcement:user_list')
 
 def announcement_list(request):

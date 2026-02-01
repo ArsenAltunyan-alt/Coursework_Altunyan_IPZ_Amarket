@@ -1,46 +1,166 @@
 {% extends 'main/base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Мої оголошення</h2>
-    <div class="row">
-        {% for announcement in announcements %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm {% if not announcement.is_active %}border-warning bg-light{% endif %}">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        {{ announcement.title }}
-                        {% if not announcement.is_active %}
-                        <span class="badge bg-warning text-dark">Архівовано</span>
-                        {% endif %}
-                    </h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ announcement.price|default:"Без ціни" }}
-                        {% if announcement.price %}UAH{% endif %}
-                    </h6>
-                    <p class="card-text">{{ announcement.description|truncatewords:20 }}</p>
-                </div>
-                <div class="card-footer bg-transparent border-top-0">
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'announcement:edit' announcement.pk %}"
-                            class="btn btn-sm btn-outline-primary">Редагувати</a>
-                        <a href="{% url 'announcement:archive' announcement.pk %}"
-                            class="btn btn-sm btn-outline-warning">
-                            {% if announcement.is_active %}Архівувати{% else %}Відновити{% endif %}
+<div class="container mt-5 mb-5">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <h2 class="mb-0">Мої оголошення</h2>
+        <a href="{% url 'announcement:create' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
+            <i class="fas fa-plus me-2"></i>Створити оголошення
+        </a>
+    </div>
+
+    <div class="tab-card">
+        <ul class="nav profile-tabs mb-4" id="myAnnouncementsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-tab-pane"
+                    type="button" role="tab" aria-controls="active-tab-pane" aria-selected="true">
+                    Актуальні
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived-tab-pane"
+                    type="button" role="tab" aria-controls="archived-tab-pane" aria-selected="false">
+                    Архівовані
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myAnnouncementsTabsContent">
+            <div class="tab-pane fade show active" id="active-tab-pane" role="tabpanel" aria-labelledby="active-tab"
+                tabindex="0">
+                <div class="list-group favorite-list" data-announcements-list="active">
+                {% for announcement in active_announcements %}
+                <div class="list-group-item py-3 favorite-list__item" data-announcement-item
+                    data-announcement-id="{{ announcement.pk }}">
+                    <div class="d-flex gap-3 align-items-start flex-column flex-md-row">
+                        {% with main_image=announcement.get_main_image %}
+                        <a href="{% url 'announcement:detail' announcement.pk %}" class="text-decoration-none text-dark">
+                            {% if main_image %}
+                            <img src="{{ main_image.url }}" alt="{{ announcement.title }}"
+                                class="favorite-list__thumb-img">
+                            {% else %}
+                            <div class="bg-secondary text-white d-flex align-items-center justify-content-center favorite-list__thumb-placeholder">
+                                <span></span>
+                            </div>
+                            {% endif %}
                         </a>
-                        <a href="{% url 'announcement:delete' announcement.pk %}" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Ви впевнені?');">Видалити</a>
+                        {% endwith %}
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <a href="{% url 'announcement:detail' announcement.pk %}"
+                                            class="text-decoration-none text-dark">
+                                            {{ announcement.title }}
+                                        </a>
+                                    </h5>
+                                    <div class="text-muted mb-2">
+                                        {{ announcement.price|default:"Ціна не вказана" }}
+                                        {% if announcement.price %}UAH{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="mb-2 favorite-list__desc">{{ announcement.description|striptags }}</p>
+
+                            <div class="small text-muted d-flex flex-wrap gap-3 align-items-center favorite-list__meta">
+                                <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:30 }}</span>
+                                <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
+                                {% if announcement.category %}
+                                <span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <a href="{% url 'announcement:edit' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-primary">Редагувати</a>
+                                <a href="{% url 'announcement:archive' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-warning js-announcement-archive"
+                                    data-archive-text="Архівувати" data-restore-text="Відновити">Архівувати</a>
+                                <a href="{% url 'announcement:delete' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-danger js-announcement-delete"
+                                    onclick="return confirm('Ви впевнені?');">Видалити</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
+                <div class="alert alert-info text-center" data-empty-state
+                    {% if active_announcements %}style="display: none;"{% endif %}>
+                    У вас немає активних оголошень. <a href="{% url 'announcement:create' %}">Створити перше!</a>
+                </div>
             </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                У вас немає оголошень. <a href="{% url 'announcement:create' %}">Створити перше!</a>
+
+            <div class="tab-pane fade" id="archived-tab-pane" role="tabpanel" aria-labelledby="archived-tab"
+                tabindex="0">
+                <div class="list-group favorite-list" data-announcements-list="archived">
+                {% for announcement in archived_announcements %}
+                <div class="list-group-item py-3 favorite-list__item" data-announcement-item
+                    data-announcement-id="{{ announcement.pk }}">
+                    <div class="d-flex gap-3 align-items-start flex-column flex-md-row">
+                        {% with main_image=announcement.get_main_image %}
+                        <a href="{% url 'announcement:detail' announcement.pk %}" class="text-decoration-none text-dark">
+                            {% if main_image %}
+                            <img src="{{ main_image.url }}" alt="{{ announcement.title }}"
+                                class="favorite-list__thumb-img">
+                            {% else %}
+                            <div class="bg-secondary text-white d-flex align-items-center justify-content-center favorite-list__thumb-placeholder">
+                                <span></span>
+                            </div>
+                            {% endif %}
+                        </a>
+                        {% endwith %}
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <a href="{% url 'announcement:detail' announcement.pk %}"
+                                            class="text-decoration-none text-dark">
+                                            {{ announcement.title }}
+                                        </a>
+                                    </h5>
+                                    <div class="text-muted mb-2">
+                                        {{ announcement.price|default:"Ціна не вказана" }}
+                                        {% if announcement.price %}UAH{% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark align-self-start" data-archive-badge>Архівовано</span>
+                            </div>
+
+                            <p class="mb-2 favorite-list__desc">{{ announcement.description|striptags }}</p>
+
+                            <div class="small text-muted d-flex flex-wrap gap-3 align-items-center favorite-list__meta">
+                                <span><i class="bi bi-geo-alt"></i> {{ announcement.address|truncatechars:30 }}</span>
+                                <span>{{ announcement.created_at|date:"d.m.Y" }}</span>
+                                {% if announcement.category %}
+                                <span class="badge bg-secondary">{{ announcement.category.get_full_name }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <a href="{% url 'announcement:edit' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-primary">Редагувати</a>
+                                <a href="{% url 'announcement:archive' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-warning js-announcement-archive"
+                                    data-archive-text="Архівувати" data-restore-text="Відновити">Відновити</a>
+                                <a href="{% url 'announcement:delete' announcement.pk %}"
+                                    class="btn btn-sm btn-outline-danger js-announcement-delete"
+                                    onclick="return confirm('Ви впевнені?');">Видалити</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="alert alert-info text-center" data-empty-state
+                    {% if archived_announcements %}style="display: none;"{% endif %}>
+                    У вас немає архівованих оголошень.
+                </div>
             </div>
         </div>
-        {% endfor %}
+    </div>
     </div>
 </div>
 {% endblock %}
