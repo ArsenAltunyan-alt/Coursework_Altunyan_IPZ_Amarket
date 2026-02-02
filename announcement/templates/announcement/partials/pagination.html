@@ -1,0 +1,40 @@
+{% if page_obj.has_other_pages %}
+<ul class="pagination flex-center flex-wrap gap-16">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+        <a class="page-link h-48 w-48 flex-center text-xxl rounded-8 fw-medium text-neutral-600 border border-gray-100"
+            href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+            hx-get="{% url 'announcement:list' %}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+            hx-target="#announcement-list" hx-swap="innerHTML" hx-push-url="true">
+            <i class="ph ph-arrow-left"></i>
+        </a>
+    </li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+    <li class="page-item active">
+        <span
+            class="page-link h-48 w-48 flex-center text-md rounded-8 fw-medium text-white bg-main-600 border border-main-600">{{ num }}</span>
+    </li>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li class="page-item">
+        <a class="page-link h-48 w-48 flex-center text-md rounded-8 fw-medium text-neutral-600 border border-gray-100"
+            href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}"
+            hx-get="{% url 'announcement:list' %}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}"
+            hx-target="#announcement-list" hx-swap="innerHTML" hx-push-url="true">{{ num }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link h-48 w-48 flex-center text-xxl rounded-8 fw-medium text-neutral-600 border border-gray-100"
+                href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                hx-get="{% url 'announcement:list' %}?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                hx-target="#announcement-list" hx-swap="innerHTML" hx-push-url="true">
+                <i class="ph ph-arrow-right"></i>
+            </a>
+        </li>
+        {% endif %}
+</ul>
+{% endif %}

@@ -949,9 +949,8 @@
 }
 
 .announcement-page .pagination .page-item.active .page-link{
-    background-color: var(--main-600) !important;
-    border-color: var(--main-600) !important;
-    color: hsl(var(--white)) !important;
+    background-color:  var(--bs-primary) !important;
+    border-color: #F28B00  !important;
 }
 
 .announcement-page .pagination .page-item .page-link{
@@ -959,9 +958,10 @@
 }
 
 .announcement-page .pagination .page-item .page-link:hover, .announcement-page .pagination .page-item .page-link:active, .announcement-page .pagination .page-item .page-link:focus{
-    color: var(--main-600) !important;
-    background-color: var(--main-100) !important;
-    border-color: var(--main-300) !important;
+    color: hsl(var(--white)) !important;
+    background-color:  var(--bs-primary) !important;
+    border-color: #F28B00  !important;
+
 }
 
 /* ================================= Pagination Css End =========================== */
@@ -8706,7 +8706,7 @@ body {
 
 .announcement-page .list-grid-wrapper{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     gap: 24px;
 }
 

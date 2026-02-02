@@ -1,40 +1,54 @@
 {% load static %}
 {% if announcements %}
 {% for announcement in announcements %}
-<div class="announcement-card h-100 p-16 border border-gray-100 hover-border-main-600 rounded-16 position-relative transition-2">
+<div
+    class="announcement-card h-100 p-16 border border-gray-100 hover-border-main-600 rounded-16 position-relative transition-2">
     {% if user.is_authenticated %}
-    <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}" class="announcement-card__favorite js-favorite-toggle{% if announcement.id in favorite_ids %} is-active{% endif %}" aria-label="Toggle favorite">
+    <a href="{% url 'announcement:toggle_favorite' announcement.pk %}?next={{ request.get_full_path|urlencode }}"
+        class="announcement-card__favorite js-favorite-toggle{% if announcement.id in favorite_ids %} is-active{% endif %}"
+        aria-label="Toggle favorite">
         <i class="ph{% if announcement.id in favorite_ids %}-fill{% endif %} ph-heart"></i>
     </a>
     {% else %}
-    <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}" class="announcement-card__favorite" aria-label="Login to favorite">
+    <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}" class="announcement-card__favorite"
+        aria-label="Login to favorite">
         <i class="ph ph-heart"></i>
     </a>
     {% endif %}
-    <a href="{% url 'announcement:detail' announcement.pk %}" class="announcement-card__thumb flex-center rounded-8 bg-gray-50 position-relative">
+    <a href="{% url 'announcement:detail' announcement.pk %}"
+        class="announcement-card__thumb flex-center rounded-8 bg-gray-50 position-relative">
         {% if announcement.get_main_image %}
         <img src="{{ announcement.get_main_image.url }}" alt="{{ announcement.title }}" class="max-w-unset">
         {% else %}
         <img src="{% static 'main/announcement_assets/img/without_photo.png' %}" alt="No photo" class="max-w-unset">
         {% endif %}
         {% if announcement.is_negotiable and announcement.condition == "new" %}
-            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span> 
-            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0" style="left: 45px;">Новий</span>
+        <span
+            class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span>
+        <span
+            class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0"
+            style="left: 45px;">Новий</span>
 
         {% elif announcement.is_negotiable and announcement.condition == "used" %}
-            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span> 
-            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0" style="left: 45px;">Б/В</span>
+        <span
+            class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг&nbsp;&nbsp;&nbsp;</span>
+        <span
+            class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-block-start-0"
+            style="left: 45px;">Б/В</span>
 
         {% elif announcement.is_negotiable %}
-            <span class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг</span>
+        <span
+            class="announcement-card__badge bg-primary-600 px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Торг</span>
 
         {% elif announcement.condition == "new" %}
-            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Новий</span>
+        <span
+            class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Новий</span>
 
         {% elif announcement.condition == "used" %}
-            <span class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Б/В</span>
+        <span
+            class="announcement-card__badge bg-warning px-8 py-4 text-sm text-white position-absolute inset-inline-start-0 inset-block-start-0">Б/В</span>
 
-{% endif %}
+        {% endif %}
     </a>
     <div class="announcement-card__content mt-16">
         <h6 class="title text-lg fw-semibold mt-12 mb-8">
@@ -52,21 +66,25 @@
 
         <div class="announcement-card__price my-20">
             {% if announcement.price and announcement.price > 0 %}
-            <span class="text-heading text-md fw-semibold ">{{ announcement.price }}<span class="text-gray-500 fw-normal">/UAH</span> </span>
+            <span class="text-heading text-md fw-semibold ">{{ announcement.price }}<span
+                    class="text-gray-500 fw-normal">/UAH</span> </span>
             {% else %}
             <span class="text-heading text-md fw-semibold ">Без ціни</span>
             {% endif %}
         </div>
-        
+
         {% if announcement.category %}
         <div class="mb-20">
-            <span class="bg-danger text-white px-12 py-4 rounded-pill fw-bold text-xs" style="background-color: #eb4324 !important;">
+            <span class="bg-danger text-white px-12 py-4 rounded-pill fw-bold text-xs"
+                style="background-color: #eb4324 !important;">
                 {{ announcement.category.get_full_name }}
             </span>
         </div>
         {% endif %}
 
-        <a href="{% url 'announcement:detail' announcement.pk %}" class="announcement-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex-center gap-8 fw-medium" tabindex="0">
+        <a href="{% url 'announcement:detail' announcement.pk %}"
+            class="announcement-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex-center gap-8 fw-medium"
+            tabindex="0">
             Переглянути
         </a>
     </div>
@@ -74,4 +92,12 @@
 {% endfor %}
 {% else %}
 <div class="text-gray-500">Результатів немає</div>
+{% endif %}
+{% if is_htmx %}
+<span id="results-summary" class="text-gray-900" hx-swap-oob="true">
+    Показано {{ page_obj.start_index }}-{{ page_obj.end_index }} з {{ total_count }} результатів
+</span>
+<div id="pagination-container" class="mt-40" hx-swap-oob="true">
+    {% include "announcement/partials/pagination.html" %}
+</div>
 {% endif %}

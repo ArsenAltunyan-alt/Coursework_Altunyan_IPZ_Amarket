@@ -15,161 +15,161 @@
 <div class="side-overlay"></div>
 
 <div class="announcement-page">
-<section class="shop py-80">
-    <div class="container container-lg">
-        <div class="row">
+    <section class="shop py-80">
+        <div class="container container-lg">
+            <div class="row">
 
-            <div class="col-lg-3">
-                <form class="shop-sidebar" method="get" action="{% url 'announcement:list' %}"
-                      hx-get="{% url 'announcement:list' %}"
-                      hx-target="#announcement-list"
-                      hx-swap="innerHTML"
-                      hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms">
-                    <button type="button" class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
-                        <i class="ph ph-x"></i>
-                    </button>
-                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
-                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Категорії</h6>
-                        <div id="category-hidden-inputs">
-                            {% for slug in selected_categories %}
-                            <input type="hidden" name="category" value="{{ slug }}">
-                            {% endfor %}
-                        </div>
-                        <ul class="max-h-540 overflow-y-auto scroll-sm category-list">
-                            {% for category in categories %}
-                            {% with subcategories=category.subcategories.all %}
-                            <li class="mb-24">
-                                {% if subcategories %}
-                                <div class="d-flex justify-content-between align-items-center gap-8 category-row">
-                                    <button type="button"
+                <div class="col-lg-3">
+                    <form class="shop-sidebar" method="get" action="{% url 'announcement:list' %}"
+                        hx-get="{% url 'announcement:list' %}" hx-target="#announcement-list" hx-swap="innerHTML"
+                        hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms">
+                        <button type="button"
+                            class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
+                            <i class="ph ph-x"></i>
+                        </button>
+                        <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                            <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Категорії</h6>
+                            <div id="category-hidden-inputs">
+                                {% for slug in selected_categories %}
+                                <input type="hidden" name="category" value="{{ slug }}">
+                                {% endfor %}
+                            </div>
+                            <ul class="max-h-540 overflow-y-auto scroll-sm category-list">
+                                {% for category in categories %}
+                                {% with subcategories=category.subcategories.all %}
+                                <li class="mb-24">
+                                    {% if subcategories %}
+                                    <div class="d-flex justify-content-between align-items-center gap-8 category-row">
+                                        <button type="button"
                                             class="category-select d-flex align-items-center gap-8 text-gray-900 hover-text-main-600{% if category.id in selected_category_parent_ids %} text-main-600 is-selected{% endif %}"
-                                            data-kind="parent"
-                                            data-parent-id="{{ category.id }}"
+                                            data-kind="parent" data-parent-id="{{ category.id }}"
                                             data-slug="{{ category.slug }}">
+                                            <span>{{ category.name }}</span>
+                                        </button>
+                                        <button type="button" class="category-toggle"
+                                            data-target="cat-{{ category.id }}" aria-controls="cat-{{ category.id }}"
+                                            aria-expanded="{% if category.id in selected_category_parent_ids %}true{% else %}false{% endif %}">
+                                            <i class="ph ph-caret-down"></i>
+                                        </button>
+                                    </div>
+
+                                    <ul class="collapse mt-12 ps-16{% if category.id in selected_category_parent_ids %} show{% endif %}"
+                                        id="cat-{{ category.id }}">
+                                        {% for subcategory in subcategories %}
+                                        <li class="mb-8">
+                                            <button type="button"
+                                                class="category-select d-flex align-items-center gap-8 text-gray-700 hover-text-main-600{% if subcategory.slug in selected_categories %} text-main-600 is-selected{% endif %}"
+                                                data-kind="child" data-parent-id="{{ category.id }}"
+                                                data-slug="{{ subcategory.slug }}">
+                                                <span>{{ subcategory.name }}</span>
+                                            </button>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <button type="button"
+                                        class="category-select d-flex align-items-center gap-8 text-gray-900 hover-text-main-600{% if category.slug in selected_categories %} text-main-600 is-selected{% endif %}"
+                                        data-kind="parent" data-parent-id="{{ category.id }}"
+                                        data-slug="{{ category.slug }}">
                                         <span>{{ category.name }}</span>
                                     </button>
-                                    <button type="button"
-                                            class="category-toggle"
-                                            data-target="cat-{{ category.id }}"
-                                            aria-controls="cat-{{ category.id }}"
-                                            aria-expanded="{% if category.id in selected_category_parent_ids %}true{% else %}false{% endif %}">
-                                        <i class="ph ph-caret-down"></i>
-                                    </button>
-                                </div>
-
-                                <ul class="collapse mt-12 ps-16{% if category.id in selected_category_parent_ids %} show{% endif %}" id="cat-{{ category.id }}">
-                                    {% for subcategory in subcategories %}
-                                    <li class="mb-8">
-                                        <button type="button"
-                                                class="category-select d-flex align-items-center gap-8 text-gray-700 hover-text-main-600{% if subcategory.slug in selected_categories %} text-main-600 is-selected{% endif %}"
-                                                data-kind="child"
-                                                data-parent-id="{{ category.id }}"
-                                                data-slug="{{ subcategory.slug }}">
-                                            <span>{{ subcategory.name }}</span>
-                                        </button>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                                {% else %}
-                                <button type="button"
-                                        class="category-select d-flex align-items-center gap-8 text-gray-900 hover-text-main-600{% if category.slug in selected_categories %} text-main-600 is-selected{% endif %}"
-                                        data-kind="parent"
-                                        data-parent-id="{{ category.id }}"
-                                        data-slug="{{ category.slug }}">
-                                    <span>{{ category.name }}</span>
-                                </button>
-                                {% endif %}
-                            </li>
-                            {% endwith %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
-                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Ціна</h6>
-                        <div class="custom--range">
-                            <div id="slider-range" data-min="0" data-max="{{ max_price_value|default:0 }}" data-step="100" data-values="{{ min_price|default:0 }},{{ max_price|default:max_price_value }}" data-prefix="UAH "></div>
-                            <div class="flex-between flex-wrap-reverse gap-8 mt-24 ">
-                                <div class="custom--range__content flex-align gap-8">
-                                    <input type="number" class="form-control w-96" name="min_price" id="min_price" value="{{ min_price|default:0 }}" min="0" max="{{ max_price_value|default:0 }}">
-                                    <span class="text-gray-500 text-md flex-shrink-0">-</span>
-                                    <input type="number" class="form-control w-96" name="max_price" id="max_price" value="{{ max_price|default:max_price_value }}" min="0" max="{{ max_price_value|default:0 }}">
-                                    <input type="text" class="custom--range__prices text-neutral-600 text-start text-md fw-medium d-none" id="amount" readonly>
+                                    {% endif %}
+                                </li>
+                                {% endwith %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                            <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Ціна</h6>
+                            <div class="custom--range">
+                                <div id="slider-range" data-min="0" data-max="{{ max_price_value|default:0 }}"
+                                    data-step="100"
+                                    data-values="{{ min_price|default:0 }},{{ max_price|default:max_price_value }}"
+                                    data-prefix="UAH "></div>
+                                <div class="flex-between flex-wrap-reverse gap-8 mt-24 ">
+                                    <div class="custom--range__content flex-align gap-8">
+                                        <input type="number" class="form-control w-96" name="min_price" id="min_price"
+                                            value="{{ min_price|default:0 }}" min="0"
+                                            max="{{ max_price_value|default:0 }}">
+                                        <span class="text-gray-500 text-md flex-shrink-0">-</span>
+                                        <input type="number" class="form-control w-96" name="max_price" id="max_price"
+                                            value="{{ max_price|default:max_price_value }}" min="0"
+                                            max="{{ max_price_value|default:0 }}">
+                                        <input type="text"
+                                            class="custom--range__prices text-neutral-600 text-start text-md fw-medium d-none"
+                                            id="amount" readonly>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
-                        <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Стан</h6>
-                        <ul class="max-h-540 overflow-y-auto scroll-sm">
-                            {% for value, label in condition_choices %}
-                            <li class="mb-24">
-                                <div class="form-check common-check common-radio{% if forloop.first %} checked-black{% else %} checked-gray{% endif %}">
-                                    <input class="form-check-input" type="radio" name="condition" id="condition-{{ forloop.counter }}" value="{{ value }}" {% if selected_condition == value %}checked{% endif %}>
-                                    <label class="form-check-label" for="condition-{{ forloop.counter }}">{{ label }}</label>
+                        <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
+                            <h6 class="text-xl border-bottom border-gray-100 pb-24 mb-24">Стан</h6>
+                            <ul class="max-h-540 overflow-y-auto scroll-sm">
+                                {% for value, label in condition_choices %}
+                                <li class="mb-24">
+                                    <div
+                                        class="form-check common-check common-radio{% if forloop.first %} checked-black{% else %} checked-gray{% endif %}">
+                                        <input class="form-check-input" type="radio" name="condition"
+                                            id="condition-{{ forloop.counter }}" value="{{ value }}" {% if selected_condition == value %}checked{% endif %}>
+                                        <label class="form-check-label" for="condition-{{ forloop.counter }}">{{ label }}</label>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="shop-sidebar__box bargain-box border border-gray-100 rounded-8 p-32 mb-32">
+                            <div class="bargain-header">
+                                <h6 class="text-xl">Можливий торг</h6>
+                                <div class="form-check common-check bargain-check">
+                                    <input class="form-check-input" type="checkbox" name="is_negotiable" id="bargain1"
+                                        {% if is_negotiable_selected %}checked{% endif %}>
                                 </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="shop-sidebar__box bargain-box border border-gray-100 rounded-8 p-32 mb-32">
-                        <div class="bargain-header">
-                            <h6 class="text-xl">Можливий торг</h6>
-                            <div class="form-check common-check bargain-check">
-                                <input class="form-check-input" type="checkbox" name="is_negotiable" id="bargain1" {% if is_negotiable_selected %}checked{% endif %}>
                             </div>
                         </div>
-                    </div>
-                    <div class="shop-sidebar__box border border-gray-100 rounded-8 p-16 mt-12">
-                        <a href="{% url 'announcement:list' %}"
-                           hx-get="{% url 'announcement:list' %}"
-                           hx-target="#announcement-list"
-                           hx-swap="innerHTML"
-                           hx-push-url="true"
-                           class="btn bg-main-600 text-white w-100">Скинути фільтри</a>
-                    </div>
-                </form>
-            </div>
-
-            <div class="col-lg-9">
-                <div class="flex-between gap-16 flex-wrap mb-40 ">
-                    <span class="text-gray-900">Показано {{ total_count }} із {{ total_count }} результатів</span>
-                    <div class="position-relative flex-align gap-16 flex-wrap">
-                        <div class="list-grid-btns flex-align gap-16">
-                            <button type="button" class="w-44 h-44 flex-center border border-gray-100 rounded-6 text-2xl list-btn">
-                                <i class="ph-bold ph-list-dashes"></i>
-                            </button>
-                            <button type="button" class="w-44 h-44 flex-center border border-main-600 text-white bg-main-600 rounded-6 text-2xl grid-btn">
-                                <i class="ph ph-squares-four"></i>
-                            </button>
-                        </div>  
-                        <div class="position-relative text-gray-500 flex-align gap-4 text-14">
-                            <label for="sorting" class="text-inherit flex-shrink-0">Сортувати за: </label>
-                            <select class="form-control common-input px-14 py-14 text-inherit rounded-6 w-auto" id="sorting">
-                                <option value="1">Нові</option>
-                                <option value="2">Ціна</option>
-                                <option value="3">Рейтинг</option>
-                            </select>
+                        <div class="shop-sidebar__box border border-gray-100 rounded-8 p-16 mt-12">
+                            <a href="{% url 'announcement:list' %}" hx-get="{% url 'announcement:list' %}"
+                                hx-target="#announcement-list" hx-swap="innerHTML" hx-push-url="true"
+                                class="btn bg-main-600 text-white w-100">Скинути фільтри</a>
                         </div>
-                        <button type="button" class="w-44 h-44 d-lg-none d-flex flex-center border border-gray-100 rounded-6 text-2xl sidebar-btn"><i class="ph-bold ph-funnel"></i></button>
-                    </div>
+                    </form>
                 </div>
 
-                <div id="announcement-list" class="list-grid-wrapper">
-    {% include "announcement/partials/announcement_cards.html" %}
-</div>
+                <div class="col-lg-9">
+                    <div class="flex-between gap-16 flex-wrap mb-40 ">
+                        <span id="results-summary" class="text-gray-900">Показано {{ page_obj.start_index }}-{{ page_obj.end_index }} із {{ total_count }} результатів</span>
+                        <div class="position-relative flex-align gap-16 flex-wrap">
+                            <div class="list-grid-btns flex-align gap-16">
+                            </div>
+                            <div class="position-relative text-gray-500 flex-align gap-4 text-14">
+                                <label for="sorting" class="text-inherit flex-shrink-0">Сортувати за: </label>
+                                <select class="form-control common-input px-14 py-14 text-inherit rounded-6 w-auto"
+                                    id="sorting">
+                                    <option value="1">Нові</option>
+                                    <option value="2">Ціна</option>
+                                    <option value="3">Рейтинг</option>
+                                </select>
+                            </div>
+                            <button type="button"
+                                class="w-44 h-44 d-lg-none d-flex flex-center border border-gray-100 rounded-6 text-2xl sidebar-btn"><i
+                                    class="ph-bold ph-funnel"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="announcement-list" class="list-grid-wrapper">
+                        {% include "announcement/partials/announcement_cards.html" %}
+                    </div>
+                    <div id="pagination-container" class="mt-40">
+                        {% include "announcement/partials/pagination.html" %}
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 </div>
 
-<div class="ai-assistant"
-     data-ai-assistant
-     data-endpoint="{% url 'assistant:message' %}"
-     data-inactive-img="{% static 'main/img/inactive.png' %}"
-     data-active-img="{% static 'main/img/active.png' %}"
-     data-generate-img="{% static 'main/img/generate.gif' %}"
-     data-speaks-img="{% static 'main/img/speaks.gif' %}">
+<div class="ai-assistant" data-ai-assistant data-endpoint="{% url 'assistant:message' %}"
+    data-inactive-img="{% static 'main/img/inactive.png' %}" data-active-img="{% static 'main/img/active.png' %}"
+    data-generate-img="{% static 'main/img/generate.gif' %}" data-speaks-img="{% static 'main/img/speaks.gif' %}">
     <div class="ai-assistant__panel" role="dialog" aria-label="AI assistant">
         <div class="ai-assistant__header">
             <div class="ai-assistant__title">
@@ -412,30 +412,30 @@
                 body: JSON.stringify({ message: text }),
                 credentials: 'same-origin',
             })
-            .then(function (resp) {
-                if (!resp.ok) throw new Error('Request failed');
-                return resp.json();
-            })
-            .then(function (data) {
-                typing.remove();
-                setAvatarState('speaks');
-                appendBubble(data.reply || 'Ось що знайшов(ла).', false);
-                if (data.questions && data.questions.length) {
-                    appendBubble('Уточніть, будь ласка: ' + data.questions.join(' '), false);
-                }
-                appendItems(data.items || []);
-                setTimeout(function () {
+                .then(function (resp) {
+                    if (!resp.ok) throw new Error('Request failed');
+                    return resp.json();
+                })
+                .then(function (data) {
+                    typing.remove();
+                    setAvatarState('speaks');
+                    appendBubble(data.reply || 'Ось що знайшов(ла).', false);
+                    if (data.questions && data.questions.length) {
+                        appendBubble('Уточніть, будь ласка: ' + data.questions.join(' '), false);
+                    }
+                    appendItems(data.items || []);
+                    setTimeout(function () {
+                        setAvatarState('active');
+                    }, 800);
+                })
+                .catch(function () {
+                    typing.remove();
+                    appendBubble('Вибачте, сталася помилка. Спробуйте ще раз.', false);
                     setAvatarState('active');
-                }, 800);
-            })
-            .catch(function () {
-                typing.remove();
-                appendBubble('Вибачте, сталася помилка. Спробуйте ще раз.', false);
-                setAvatarState('active');
-            })
-            .finally(function () {
-                sendBtn.disabled = false;
-            });
+                })
+                .finally(function () {
+                    sendBtn.disabled = false;
+                });
         }
 
         toggle.addEventListener('click', function () {
@@ -458,3 +458,4 @@
     })();
 </script>
 {% endblock %}
+

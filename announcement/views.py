@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .forms import AnnouncementForm, AnnouncementImageForm
 from .models import Announcement, AnnouncementImage, Category
 from django.contrib import messages
@@ -259,14 +260,27 @@ def announcement_list(request):
     if is_negotiable == 'on':
         announcements = announcements.filter(is_negotiable=True)
 
+    # Pagination
+    paginator = Paginator(announcements, 12)  # 12 items per page
+    page = request.GET.get('page', 1)
+    
+    try:
+        announcements_page = paginator.page(page)
+    except PageNotAnInteger:
+        announcements_page = paginator.page(1)
+    except EmptyPage:
+        announcements_page = paginator.page(paginator.num_pages)
+
     favorite_ids = set()
     if request.user.is_authenticated:
         favorite_ids = set(
             request.user.favorite_announcements.values_list('id', flat=True)
         )
 
+    is_htmx = request.headers.get("HX-Request") == "true"
     context = {
-        'announcements': announcements,
+        'announcements': announcements_page,
+        'page_obj': announcements_page,
         'categories': categories,
         'favorite_ids': favorite_ids,
         'condition_choices': Announcement.CONDITION_CHOICES,
@@ -276,10 +290,11 @@ def announcement_list(request):
         'min_price': min_price or '',
         'max_price': max_price or '',
         'is_negotiable_selected': is_negotiable == 'on',
-        'total_count': announcements.count(),
+        'total_count': paginator.count,
         'max_price_value': max_price_value,
+        'is_htmx': is_htmx,
     }
-    if request.headers.get("HX-Request") == "true":
+    if is_htmx:
         return render(request, 'announcement/partials/announcement_cards.html', context)
     return render(request, 'announcement/announcement_list.html', context)
 
