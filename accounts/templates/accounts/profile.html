@@ -1,7 +1,7 @@
 {% extends 'main/base.html' %}
 {% load static %}
 
-{% block title %}Profile - {{ user.full_name }}{% endblock %}
+{% block title %}Профіль {{ user.first_name }} {{ user.last_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -266,7 +266,7 @@
 
                 <div class="mt-4">
                     <a href="{% url 'announcement:favorites' %}" class="btn btn-outline-warning w-100 rounded-pill">
-                        <i class="fas fa-heart me-2"></i>Вибране
+                        <i class="fas fa-heart me-2"></i>Обране
                     </a>
                 </div>
             </div>
@@ -407,7 +407,7 @@
                                                         </a>
                                                     </h6>
                                                     <div class="text-muted small mb-2">
-                                                        {{ announcement.price|default:"No price" }}
+                                                        {{ announcement.price|default:"Без ціни" }}
                                                         {% if announcement.price %}UAH{% endif %}
                                                     </div>
                                                     <div class="text-muted small">
@@ -415,7 +415,7 @@
                                                     </div>
                                                 </div>
                                                 {% if not announcement.is_active %}
-                                                <span class="badge bg-warning text-dark">Archived</span>
+                                                <span class="badge bg-warning text-dark">Архівовано</span>
                                                 {% endif %}
                                             </div>
                                             <div class="d-flex flex-wrap gap-2 mt-3">

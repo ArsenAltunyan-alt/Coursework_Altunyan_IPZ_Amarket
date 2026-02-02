@@ -178,7 +178,7 @@ def archive_announcement(request, pk):
     if announcement.seller == request.user:
         announcement.is_active = not announcement.is_active
         announcement.save()
-        status = "archived" if not announcement.is_active else "restored"
+        status = "Архівовано" if not announcement.is_active else "Відновлено"
         messages.success(request, f'Оголошення {status}!')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({

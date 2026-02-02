@@ -8706,7 +8706,7 @@ body {
 
 .announcement-page .list-grid-wrapper{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 355px));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 24px;
 }
 
