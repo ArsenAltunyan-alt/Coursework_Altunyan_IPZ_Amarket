@@ -192,6 +192,25 @@
         font-size: 0.85rem;
     }
 
+    .announcements-scroll {
+        max-height: 560px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .announcements-scroll::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .announcements-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .announcements-scroll::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.35);
+        border-radius: 10px;
+    }
+
     @media (max-width: 768px) {
         .profile-header {
             flex-direction: column;
@@ -393,7 +412,8 @@
                                 </a>
                             </div>
 
-                            <div class="row g-3">
+                            <div class="announcements-scroll">
+                                <div class="row g-3">
                                 {% for announcement in announcements %}
                                 <div class="col-12">
                                     <div class="card border-0 shadow-sm">
@@ -444,6 +464,7 @@
                                     </div>
                                 </div>
                                 {% endfor %}
+                                </div>
                             </div>
                         </div>
                     </div>
