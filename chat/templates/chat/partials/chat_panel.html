@@ -38,12 +38,24 @@
             {% for message in chats %}
             <div class="chat-message {% if message.sender == request.user %} sender {% else %} receiver {% endif %}">
                 <div class="message-bubble">
+                    {% if message.content %}
                     <div class="message-text">{{ message.content }}</div>
+                    {% endif %}
+                    {% if message.image %}
+                    <div class="message-image mt-2">
+                        <img src="{{ message.image.url }}" alt="Chat image"
+                            style="max-width: 260px; width: 100%; border-radius: 10px;" />
+                    </div>
+                    {% endif %}
                     <div class="message-meta">
                         <span>{{ message.timestamp|date:"H:i" }}</span>
                         {% if message.sender == request.user %}
                         <span class="read-status" data-message-id="{{ message.id }}">
-                            {% if message.is_read %}&#10003;&#10003;{% else %}&#10003;{% endif %}
+                            {% if message.is_read %}
+                            <svg viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5l3 3 6-6"/><path d="M7 5l3 3 5-5"/></svg>
+                            {% else %}
+                            <svg viewBox="0 0 16 10" aria-hidden="true"><path d="M1 5l3 3 6-6"/></svg>
+                            {% endif %}
                         </span>
                         {% endif %}
                     </div>
@@ -60,7 +72,15 @@
                 <input type="text" id="my_input" class="form-control"
                     placeholder="Введіть повідомлення..." required
                     {% if not room_name %}disabled{% endif %} />
-                <button id="submit_button" class="btn btn-primary" type="button"
+                <input type="file" id="image_input" class="d-none"
+                    accept="image/*" {% if not room_name %}disabled{% endif %} />
+                <button id="attach_button" class="btn btn-attach" type="button"
+                    data-upload-url="{% if room_name %}{% url 'chat:send_image' room_name %}{% endif %}"
+                    {% if not room_name %}disabled{% endif %}
+                    aria-label="Attach photo">
+                    <span class="paperclip-icon" aria-hidden="true"></span>
+                </button>
+                <button id="submit_button" class="btn btn-send" type="button"
                     {% if not room_name %}disabled{% endif %}>
                     Надіслати
                 </button>

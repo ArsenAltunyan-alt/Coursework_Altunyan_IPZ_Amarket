@@ -30,9 +30,13 @@
                 <small class="d-block text-truncate text-muted last-message">
                     {% if item.last_message %}
                     {% if item.last_message.sender == request.user %}Ви:{% endif %}
+                    {% if item.last_message.content %}
                     {{ item.last_message.content|truncatewords:6 }}
+                    {% elif item.last_message.image %}
+                    Фото
+                    {% endif %}
                     {% else %}
-                    No messages yet
+                    Поки немає повідомлень
                     {% endif %}
                 </small>
             </div>

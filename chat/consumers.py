@@ -37,6 +37,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'receiver': receiver.username,
                 'message': message,
                 'message_id': message_id,
+                'image_url': '',
             }
         )
         
@@ -46,12 +47,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender = event['sender']
         receiver = event['receiver']
         message_id = event.get('message_id')
+        image_url = event.get('image_url', '')
 
         await self.send(text_data=json.dumps({
             'sender': sender,
             'receiver': receiver,
             'message': message,
             'message_id': message_id,
+            'image_url': image_url,
         }))
 
         if message_id and self.scope['user'].username == receiver:

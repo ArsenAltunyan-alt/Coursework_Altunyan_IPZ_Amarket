@@ -5,7 +5,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from .models import Conversation, Message
 
@@ -50,6 +53,10 @@ def _ensure_receiver_in_list(user_last_messages, receiver):
     return user_last_messages
 
 
+def _get_room_group_name(user1_username, user2_username):
+    return f"chat_{''.join(sorted([user1_username, user2_username]))}"
+
+
 @login_required
 def chat_index(request):
     user_last_messages = _get_user_last_messages(request.user)
@@ -65,6 +72,9 @@ def chat_index(request):
 def chat_list(request):
     room_name = request.GET.get("room", "")
     user_last_messages = _get_user_last_messages(request.user)
+    if room_name:
+        receiver = get_object_or_404(User, username=room_name)
+        user_last_messages = _ensure_receiver_in_list(user_last_messages, receiver)
     return render(request, "chat/partials/chat_list.html", {
         "room_name": room_name,
         "user_last_messages": user_last_messages,
@@ -87,11 +97,27 @@ def chat_room(request, room_name):
         chats = chats.filter(Q(content__icontains=search_query))
 
     chats = chats.order_by("timestamp")
-    Message.objects.filter(
+    unread_message_ids = list(Message.objects.filter(
         receiver=request.user,
         sender=receiver,
         is_read=False,
+    ).values_list("id", flat=True))
+    Message.objects.filter(
+        id__in=unread_message_ids
     ).update(is_read=True, read_at=timezone.now())
+
+    if unread_message_ids:
+        channel_layer = get_channel_layer()
+        room_group_name = _get_room_group_name(request.user.username, receiver.username)
+        for message_id in unread_message_ids:
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    "type": "read_receipt",
+                    "message_id": message_id,
+                    "reader": request.user.username,
+                },
+            )
 
     user_last_messages = _get_user_last_messages(request.user)
     user_last_messages = _ensure_receiver_in_list(user_last_messages, receiver)
@@ -136,5 +162,47 @@ def delete_chat(request, room_name):
         Q(user1=request.user, user2=receiver) |
         Q(user1=receiver, user2=request.user)
     ).delete()
-    messages.success(request, "Chat deleted.")
+    messages.success(request, "Чат видалено.")
     return redirect("chat:index")
+
+
+@login_required
+def send_image(request, room_name):
+    if request.method != "POST":
+        return HttpResponseBadRequest("Invalid method.")
+
+    receiver = get_object_or_404(User, username=room_name)
+    if receiver == request.user:
+        return HttpResponseBadRequest("Invalid receiver.")
+
+    image = request.FILES.get("image")
+    if not image:
+        return HttpResponseBadRequest("Image is required.")
+
+    Conversation.get_or_create_between(request.user, receiver)
+    new_message = Message.objects.create(
+        sender=request.user,
+        receiver=receiver,
+        content="",
+        image=image,
+    )
+
+    channel_layer = get_channel_layer()
+    room_group_name = _get_room_group_name(request.user.username, receiver.username)
+    async_to_sync(channel_layer.group_send)(
+        room_group_name,
+        {
+            "type": "chat_message",
+            "sender": request.user.username,
+            "receiver": receiver.username,
+            "message": "",
+            "message_id": new_message.id,
+            "image_url": new_message.image.url if new_message.image else "",
+        },
+    )
+
+    return JsonResponse({
+        "ok": True,
+        "message_id": new_message.id,
+        "image_url": new_message.image.url if new_message.image else "",
+    })

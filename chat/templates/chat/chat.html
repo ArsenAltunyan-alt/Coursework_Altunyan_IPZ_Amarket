@@ -30,6 +30,10 @@
     .chat-list .list-group-item.active .text-muted {
         color: rgba(255, 255, 255, 0.8) !important;
     }
+    .chat-list .list-group-item:last-child {
+        border-bottom-left-radius: 9px;
+        border-bottom-right-radius: 9px;
+    }
 
     .chatbox {
         background: #fff;
@@ -75,13 +79,99 @@
         margin-top: 6px;
         opacity: 0.8;
     }
+    .read-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+    }
+    .read-status svg {
+        width: 14px;
+        height: 10px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
 
     .chat-input {
         background: #fff;
-        border-radius: 16px;
+        border-radius: 18px;
         padding: 12px;
         margin-top: 16px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-input .input-group {
+        gap: 0;
+        align-items: center;
+    }
+
+    .chat-input .form-control {
+        height: 44px;
+        border-radius: 999px 0 0 999px;
+        border: 1px solid #f28c28;
+        border-right: 0;
+        padding: 10px 16px;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .chat-input .form-control:focus {
+        border-color: #f28c28;
+        box-shadow: 0 0 0 2px rgba(242, 140, 40, 0.2);
+    }
+    .chat-input .form-control:disabled {
+        background: #fff;
+        opacity: 1;
+    }
+
+    .btn-send {
+        background: #f28c28;
+        border-color: #f28c28;
+        color: #fff;
+        border-radius: 0 999px 999px 0;
+        height: 44px;
+        padding: 0 18px;
+        font-weight: 600;
+    }
+
+    .btn-send:hover {
+        background: #ea7b12;
+        border-color: #ea7b12;
+        color: #fff;
+    }
+
+    .btn-attach {
+        background: #fff;
+        border: 1px solid #f28c28;
+        border-left: 0;
+        border-right: 0;
+        color: #f28c28;
+        width: 44px;
+        height: 44px;
+        border-radius: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .btn-attach:hover {
+        background: #fff6ee;
+    }
+    .btn-attach:disabled {
+        background: #fff;
+        color: #f28c28;
+        opacity: 1;
+    }
+
+    .paperclip-icon {
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        background: no-repeat center / contain;
+        background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23f28c28' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-8.49 8.49a5 5 0 01-7.07-7.07l8.49-8.49a3.5 3.5 0 014.95 4.95l-8.5 8.49a2 2 0 11-2.83-2.83l7.78-7.78'/%3E%3C/svg%3E");
     }
 </style>
 {% endblock %}
@@ -99,7 +189,7 @@
                         <div class="card-body p-0">
                             <div id="chat-list"
                                 hx-get="{% url 'chat:list' %}"
-                                hx-trigger="load, refresh"
+                                hx-trigger="load, refresh, every 5s"
                                 hx-target="#chat-list"
                                 hx-swap="innerHTML"
                                 hx-include="#current-room">
@@ -132,6 +222,8 @@
         const chatbox = panel ? panel.querySelector("#chatbox") : null;
         const input = panel ? panel.querySelector("#my_input") : null;
         const submitButton = panel ? panel.querySelector("#submit_button") : null;
+        const imageInput = panel ? panel.querySelector("#image_input") : null;
+        const attachButton = panel ? panel.querySelector("#attach_button") : null;
         const deleteButton = panel ? panel.querySelector("[data-chat-delete]") : null;
 
         function scrollToBottom() {
@@ -144,7 +236,7 @@
 
         if (deleteButton) {
             deleteButton.addEventListener("click", function (event) {
-                if (!confirm("Delete this chat and all messages?")) {
+                if (!confirm("Видалити цей чат і всі повідомлення?")) {
                     event.preventDefault();
                 }
             });
@@ -206,6 +298,59 @@
             };
         }
 
+        function getCookie(name) {
+            const cookieValue = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith(name + "="));
+            return cookieValue ? decodeURIComponent(cookieValue.split("=")[1]) : "";
+        }
+
+        function uploadImage() {
+            if (!imageInput || !imageInput.files || imageInput.files.length === 0) {
+                return;
+            }
+            const uploadUrl = attachButton ? attachButton.dataset.uploadUrl : "";
+            if (!uploadUrl) {
+                alert("Upload URL is missing.");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("image", imageInput.files[0]);
+
+            fetch(uploadUrl, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: formData,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Upload failed");
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    imageInput.value = "";
+                    const chatList = document.querySelector("#chat-list");
+                    if (chatList) {
+                        htmx.trigger(chatList, "refresh");
+                    }
+                })
+                .catch(() => {
+                    alert("Image upload failed.");
+                });
+        }
+
+        if (attachButton && imageInput) {
+            attachButton.onclick = function () {
+                imageInput.click();
+            };
+            imageInput.onchange = function () {
+                uploadImage();
+            };
+        }
+
         window.chatSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
 
@@ -214,12 +359,12 @@
                     `.read-status[data-message-id="${data.message_id}"]`
                 );
                 if (statusEl) {
-                    statusEl.innerHTML = "&#10003;&#10003;";
+                    statusEl.innerHTML = "<svg viewBox='0 0 16 10' aria-hidden='true'><path d='M1 5l3 3 6-6'/><path d='M7 5l3 3 5-5'/></svg>";
                 }
                 return;
             }
 
-            if (data.message && data.sender) {
+            if ((data.message || data.image_url) && data.sender) {
                 const noMessages = document.querySelector(".no-messages");
                 if (noMessages) {
                     noMessages.style.display = "none";
@@ -235,9 +380,25 @@
                 const bubble = document.createElement("div");
                 bubble.className = "message-bubble";
 
-                const text = document.createElement("div");
-                text.className = "message-text";
-                text.textContent = data.message;
+                if (data.message) {
+                    const text = document.createElement("div");
+                    text.className = "message-text";
+                    text.textContent = data.message;
+                    bubble.appendChild(text);
+                }
+
+                if (data.image_url) {
+                    const imageWrap = document.createElement("div");
+                    imageWrap.className = "message-image mt-2";
+                    const img = document.createElement("img");
+                    img.src = data.image_url;
+                    img.alt = "Chat image";
+                    img.style.maxWidth = "260px";
+                    img.style.width = "100%";
+                    img.style.borderRadius = "10px";
+                    imageWrap.appendChild(img);
+                    bubble.appendChild(imageWrap);
+                }
 
                 const meta = document.createElement("div");
                 meta.className = "message-meta";
@@ -253,11 +414,10 @@
                     if (data.message_id) {
                         status.setAttribute("data-message-id", data.message_id);
                     }
-                    status.innerHTML = "&#10003;";
+                    status.innerHTML = "<svg viewBox='0 0 16 10' aria-hidden='true'><path d='M1 5l3 3 6-6'/></svg>";
                     meta.appendChild(status);
                 }
 
-                bubble.appendChild(text);
                 bubble.appendChild(meta);
                 div.appendChild(bubble);
                 if (chatbox) {
@@ -269,10 +429,11 @@
                     ".list-group-item.active .last-message"
                 );
                 if (lastMessage) {
+                    const preview = data.image_url ? "Photo" : data.message;
                     lastMessage.textContent =
                         data.sender === currentUsername
-                            ? "You: " + data.message
-                            : data.message;
+                            ? "You: " + preview
+                            : preview;
 
                     const timestamp = document.querySelector(
                         ".list-group-item.active .timestamp"
