@@ -7,10 +7,12 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils import timezone
+from django.urls import reverse
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from .models import Conversation, Message
+from announcement.models import Announcement
 
 User = get_user_model()
 
@@ -87,6 +89,14 @@ def chat_room(request, room_name):
     if receiver == request.user:
         return redirect("chat:index")
 
+    announcement_context = None
+    announcement_id = request.GET.get("announcement")
+    if announcement_id:
+        try:
+            announcement_context = Announcement.objects.get(pk=announcement_id)
+        except Announcement.DoesNotExist:
+            announcement_context = None
+
     search_query = request.GET.get("search", "")
     chats = Message.objects.filter(
         (Q(sender=request.user) & Q(receiver__username=room_name)) |
@@ -97,6 +107,10 @@ def chat_room(request, room_name):
         chats = chats.filter(Q(content__icontains=search_query))
 
     chats = chats.order_by("timestamp")
+    if announcement_context is None:
+        last_with_announcement = chats.exclude(announcement__isnull=True).select_related("announcement").order_by("-timestamp").first()
+        if last_with_announcement:
+            announcement_context = last_with_announcement.announcement
     unread_message_ids = list(Message.objects.filter(
         receiver=request.user,
         sender=receiver,
@@ -128,6 +142,7 @@ def chat_room(request, room_name):
             "receiver": receiver,
             "chats": chats,
             "search_query": search_query,
+            "announcement_context": announcement_context,
         })
 
     return render(request, "chat/chat.html", {
@@ -136,6 +151,7 @@ def chat_room(request, room_name):
         "chats": chats,
         "user_last_messages": user_last_messages,
         "search_query": search_query,
+        "announcement_context": announcement_context,
     })
 
 
@@ -145,7 +161,11 @@ def start_chat(request, username):
     if receiver == request.user:
         return redirect("chat:index")
 
-    return redirect("chat:room", room_name=receiver.username)
+    announcement_id = request.GET.get("announcement")
+    room_url = reverse("chat:room", args=[receiver.username])
+    if announcement_id:
+        return redirect(f"{room_url}?announcement={announcement_id}")
+    return redirect(room_url)
 
 
 @login_required
@@ -179,12 +199,21 @@ def send_image(request, room_name):
     if not image:
         return HttpResponseBadRequest("Image is required.")
 
+    announcement = None
+    announcement_id = request.POST.get("announcement") or request.GET.get("announcement")
+    if announcement_id:
+        try:
+            announcement = Announcement.objects.get(pk=announcement_id)
+        except Announcement.DoesNotExist:
+            announcement = None
+
     Conversation.get_or_create_between(request.user, receiver)
     new_message = Message.objects.create(
         sender=request.user,
         receiver=receiver,
         content="",
         image=image,
+        announcement=announcement,
     )
 
     channel_layer = get_channel_layer()
@@ -198,6 +227,16 @@ def send_image(request, room_name):
             "message": "",
             "message_id": new_message.id,
             "image_url": new_message.image.url if new_message.image else "",
+            "announcement": (
+                {
+                    "id": announcement.id,
+                    "title": announcement.title,
+                    "url": reverse("announcement:detail", args=[announcement.id]),
+                    "seller_username": announcement.seller.username,
+                }
+                if announcement
+                else None
+            ),
         },
     )
 

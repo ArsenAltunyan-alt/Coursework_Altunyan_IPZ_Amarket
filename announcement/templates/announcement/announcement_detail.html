@@ -182,7 +182,7 @@
                             href="{% url 'announcement:edit' announcement.pk %}">Редагувати</a>
                         {% elif user.is_authenticated and user != announcement.seller %}
                         <a class="btn btn-dark btn-lg"
-                            href="{% url 'chat:start' announcement.seller.username %}">Повідомлення</a>
+                            href="{% url 'chat:start' announcement.seller.username %}?announcement={{ announcement.id }}">Повідомлення</a>
                         {% else %}
                         <a class="btn btn-dark btn-lg"
                             href="{% url 'accounts:login' %}?next={{ request.path }}">Повідомлення</a>

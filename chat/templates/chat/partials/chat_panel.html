@@ -31,6 +31,7 @@
     </div>
     <div class="card-body">
         <input type="hidden" id="current-room" name="room" value="{{ room_name|default:'' }}">
+        <input type="hidden" id="current-announcement" value="{% if announcement_context %}{{ announcement_context.id }}{% endif %}">
         <div id="chatbox" class="chatbox">
             {% if not room_name %}
             <p class="no-messages text-muted mb-0">Виберіть чат зі списку, щоб розпочати.</p>
@@ -38,6 +39,14 @@
             {% for message in chats %}
             <div class="chat-message {% if message.sender == request.user %} sender {% else %} receiver {% endif %}">
                 <div class="message-bubble">
+                    {% if message.announcement and request.user == message.announcement.seller and message.sender != request.user %}
+                    <div class="small text-muted mb-1">
+                        Користувач з оголошення:
+                        <a href="{% url 'announcement:detail' message.announcement.id %}">
+                            {{ message.announcement.title }}
+                        </a>
+                    </div>
+                    {% endif %}
                     {% if message.content %}
                     <div class="message-text">{{ message.content }}</div>
                     {% endif %}

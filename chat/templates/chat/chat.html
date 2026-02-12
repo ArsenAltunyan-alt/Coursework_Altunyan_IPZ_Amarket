@@ -219,6 +219,8 @@
         const panel = document.querySelector("#chat-panel");
         const roomInput = document.querySelector("#current-room");
         const roomName = roomInput ? roomInput.value : "";
+        const announcementInput = panel ? panel.querySelector("#current-announcement") : null;
+        const announcementId = announcementInput ? announcementInput.value : "";
         const chatbox = panel ? panel.querySelector("#chatbox") : null;
         const input = panel ? panel.querySelector("#my_input") : null;
         const submitButton = panel ? panel.querySelector("#submit_button") : null;
@@ -287,6 +289,7 @@
                             message: messageInput,
                             username: currentUsername,
                             room_name: roomName,
+                            announcement_id: announcementId || null,
                         })
                     );
                     input.value = "";
@@ -316,6 +319,9 @@
             }
             const formData = new FormData();
             formData.append("image", imageInput.files[0]);
+            if (announcementId) {
+                formData.append("announcement", announcementId);
+            }
 
             fetch(uploadUrl, {
                 method: "POST",
@@ -379,6 +385,23 @@
 
                 const bubble = document.createElement("div");
                 bubble.className = "message-bubble";
+
+                if (
+                    data.announcement &&
+                    data.announcement.title &&
+                    data.announcement.url &&
+                    data.announcement.seller_username === currentUsername &&
+                    data.sender !== currentUsername
+                ) {
+                    const announcementLine = document.createElement("div");
+                    announcementLine.className = "small text-muted mb-1";
+                    announcementLine.innerHTML =
+                        "Regarding listing: " +
+                        '<a href="' + data.announcement.url + '">' +
+                        data.announcement.title +
+                        "</a>";
+                    bubble.appendChild(announcementLine);
+                }
 
                 if (data.message) {
                     const text = document.createElement("div");

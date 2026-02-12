@@ -2,8 +2,10 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .models import Message, Conversation
+from django.urls import reverse
 from asgiref.sync import sync_to_async
+from .models import Message, Conversation
+from announcement.models import Announcement
 
 User = get_user_model()
 
@@ -23,10 +25,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
+        announcement_id = text_data_json.get('announcement_id')
         sender = self.scope['user']  
         receiver = await self.get_receiver_user() 
         
-        message_id = await self.save_message(sender, receiver, message)
+        message_id, announcement_payload = await self.save_message(sender, receiver, message, announcement_id)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -38,6 +41,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': message,
                 'message_id': message_id,
                 'image_url': '',
+                'announcement': announcement_payload,
             }
         )
         
@@ -48,6 +52,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         receiver = event['receiver']
         message_id = event.get('message_id')
         image_url = event.get('image_url', '')
+        announcement_payload = event.get('announcement')
 
         await self.send(text_data=json.dumps({
             'sender': sender,
@@ -55,6 +60,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'message_id': message_id,
             'image_url': image_url,
+            'announcement': announcement_payload,
         }))
 
         if message_id and self.scope['user'].username == receiver:
@@ -76,10 +82,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
 
     @sync_to_async
-    def save_message(self, sender, receiver, message):
+    def save_message(self, sender, receiver, message, announcement_id):
         Conversation.get_or_create_between(sender, receiver)
-        new_message = Message.objects.create(sender=sender, receiver=receiver, content=message)
-        return new_message.id
+        announcement = None
+        if announcement_id:
+            try:
+                announcement = Announcement.objects.get(pk=announcement_id)
+            except Announcement.DoesNotExist:
+                announcement = None
+        new_message = Message.objects.create(
+            sender=sender,
+            receiver=receiver,
+            content=message,
+            announcement=announcement,
+        )
+        announcement_payload = None
+        if announcement:
+            announcement_payload = {
+                'id': announcement.id,
+                'title': announcement.title,
+                'url': reverse('announcement:detail', args=[announcement.id]),
+                'seller_username': announcement.seller.username,
+            }
+        return new_message.id, announcement_payload
 
     @sync_to_async
     def get_receiver_user(self):
