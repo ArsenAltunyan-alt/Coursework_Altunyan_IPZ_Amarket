@@ -2,6 +2,7 @@ import requests
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -207,6 +208,12 @@ def delete_announcement(request, pk):
 
 def announcement_list(request):
     announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')
+
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        announcements = announcements.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
     categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories').order_by('name')
     max_price_value = Announcement.objects.filter(
         is_active=True,
@@ -293,6 +300,7 @@ def announcement_list(request):
         'total_count': paginator.count,
         'max_price_value': max_price_value,
         'is_htmx': is_htmx,
+        'search_query': search_query,
     }
     if is_htmx:
         return render(request, 'announcement/partials/announcement_cards.html', context)
@@ -338,6 +346,31 @@ def load_subcategories(request):
     category_id = request.GET.get('category_id')
     subcategories = Category.objects.filter(parent_id=category_id).order_by('name')
     return JsonResponse(list(subcategories.values('id', 'name')), safe=False)
+
+def search_suggestions(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({"items": []})
+
+    announcements = (
+        Announcement.objects.filter(is_active=True)
+        .filter(Q(title__icontains=query) | Q(description__icontains=query))
+        .prefetch_related('images')
+        .order_by('-created_at')[:8]
+    )
+
+    items = []
+    for announcement in announcements:
+        image = announcement.get_main_image()
+        items.append(
+            {
+                "id": announcement.id,
+                "title": announcement.title,
+                "url": reverse('announcement:detail', args=[announcement.id]),
+                "image_url": image.url if image else "",
+            }
+        )
+    return JsonResponse({"items": items})
 
 
 def _generate_description_from_title(title):
@@ -428,3 +461,4 @@ def generate_description_from_title(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
     return JsonResponse({"description": description})
+

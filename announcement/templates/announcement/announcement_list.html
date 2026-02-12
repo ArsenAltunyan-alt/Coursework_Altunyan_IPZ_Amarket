@@ -23,6 +23,7 @@
                     <form class="shop-sidebar" method="get" action="{% url 'announcement:list' %}"
                         hx-get="{% url 'announcement:list' %}" hx-target="#announcement-list" hx-swap="innerHTML"
                         hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms">
+                        <input type="hidden" name="q" value="{{ search_query }}">
                         <button type="button"
                             class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
                             <i class="ph ph-x"></i>
@@ -458,4 +459,5 @@
     })();
 </script>
 {% endblock %}
+
 

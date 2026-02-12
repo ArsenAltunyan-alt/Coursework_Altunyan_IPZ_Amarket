@@ -41,6 +41,53 @@
         /* Prevent initial flash of register progress line before CSS loads */
         .register-step .progress-steps { opacity: 0; }
         .page-ready .register-step .progress-steps { opacity: 1; transition: opacity 0.2s ease; }
+        .search-suggest-box {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 1.5rem;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            z-index: 50;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .search-suggest-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            color: #212529;
+            text-decoration: none;
+            text-align: left;
+        }
+        .search-suggest-item:hover {
+            background: #f8f9fa;
+            color: #f28b00;
+        }
+        .search-suggest-empty {
+            padding: 10px 14px;
+            color: #6c757d;
+            text-align: left;
+        }
+        .search-suggest-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex: 0 0 36px;
+            background: #f1f3f5;
+        }
+        .search-suggest-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .d-none-force {
+            display: none !important;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -111,12 +158,15 @@
             </div>
             <div class="col-md-4 col-lg-6 text-center">
                 <div class="position-relative ps-4">
-                    <div class="d-flex border rounded-pill">
-                        <input class="form-control border-0 rounded-pill w-100 py-3" type="text"
+                    <form id="header-search-form" class="d-flex border rounded-pill" method="get"
+                        action="{% url 'announcement:list' %}" autocomplete="off">
+                        <input id="header-search-input" class="form-control border-0 rounded-pill w-100 py-3"
+                            type="text" name="q" value="{{ request.GET.q|default:'' }}"
                             placeholder="Що шукаєте?">
-                        <button type="button" class="btn btn-primary rounded-pill py-3 px-5" style="border: 0;"><i
+                        <button type="submit" class="btn btn-primary rounded-pill py-3 px-5" style="border: 0;"><i
                                 class="fas fa-search"></i></button>
-                    </div>
+                    </form>
+                    <div id="header-search-suggestions" class="search-suggest-box d-none-force"></div>
                 </div>
             </div>
             <div class="col-md-4 col-lg-3 text-center text-lg-end">
@@ -502,7 +552,96 @@
         }, 3000);
         });
     </script>
+    <script>
+        (function () {
+            var form = document.getElementById('header-search-form');
+            var input = document.getElementById('header-search-input');
+            var box = document.getElementById('header-search-suggestions');
+            if (!form || !input || !box) return;
+
+            var timer = null;
+            var activeController = null;
+            var endpoint = "{% url 'announcement:search_suggestions' %}";
+            var fallbackImage = "{% static 'main/announcement_assets/img/without_photo.png' %}";
+
+            function hideBox() {
+                box.classList.add('d-none-force');
+                box.innerHTML = '';
+            }
+
+            function escapeHtml(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function renderItems(items) {
+                if (!items.length) {
+                    box.innerHTML = '<div class="search-suggest-empty">На жаль, нічого не знайдено</div>';
+                    box.classList.remove('d-none-force');
+                    return;
+                }
+
+                box.innerHTML = items.map(function (item) {
+                    var imageUrl = item.image_url || fallbackImage;
+                    return '<a class="search-suggest-item" href="' + item.url + '">' +
+                        '<img class="search-suggest-thumb" src="' + imageUrl + '" alt="">' +
+                        '<span class="search-suggest-title">' + escapeHtml(item.title) + '</span>' +
+                        '</a>';
+                }).join('');
+                box.classList.remove('d-none-force');
+            }
+
+            function fetchSuggestions(query) {
+                if (activeController) {
+                    activeController.abort();
+                }
+                activeController = new AbortController();
+
+                fetch(endpoint + '?q=' + encodeURIComponent(query), {
+                    signal: activeController.signal,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Request failed');
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        renderItems(data.items || []);
+                    })
+                    .catch(function (error) {
+                        if (error.name === 'AbortError') return;
+                        hideBox();
+                    });
+            }
+
+            input.addEventListener('input', function () {
+                var query = input.value.trim();
+                if (timer) clearTimeout(timer);
+                if (query.length < 2) {
+                    hideBox();
+                    return;
+                }
+                timer = setTimeout(function () {
+                    fetchSuggestions(query);
+                }, 220);
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!box.contains(event.target) && event.target !== input) {
+                    hideBox();
+                }
+            });
+        })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 
 </html>
+
+
+
