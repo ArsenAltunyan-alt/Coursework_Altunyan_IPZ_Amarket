@@ -55,11 +55,11 @@
                 </div>
             </div>
         </div>
-        {% empty %}
-        <div class="alert alert-info text-center" data-favorites-empty>
+        {% endfor %}
+        <div class="alert alert-info text-center mb-0" data-favorites-empty
+            style="display: {% if announcements %}none{% else %}block{% endif %};">
             У вас поки немає жодного обраного оголошення.
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}
