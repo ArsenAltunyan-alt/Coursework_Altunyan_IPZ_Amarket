@@ -207,7 +207,7 @@ def delete_announcement(request, pk):
     return redirect('announcement:user_list')
 
 def announcement_list(request):
-    announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')
+    announcements = Announcement.objects.filter(is_active=True)
 
     search_query = request.GET.get('q', '').strip()
     if search_query:
@@ -267,6 +267,17 @@ def announcement_list(request):
     if is_negotiable == 'on':
         announcements = announcements.filter(is_negotiable=True)
 
+    # Sort
+    selected_sort = request.GET.get('sort', '').strip() or 'popular'
+    if selected_sort == '1':
+        announcements = announcements.order_by(F('price').asc(nulls_last=True), '-created_at')
+    elif selected_sort == '2':
+        announcements = announcements.order_by(F('price').desc(nulls_last=True), '-created_at')
+    elif selected_sort == 'popular':
+        announcements = announcements.order_by('-views_count', '-created_at')
+    else:
+        announcements = announcements.order_by('-views_count', '-created_at')
+
     # Pagination
     paginator = Paginator(announcements, 12)  # 12 items per page
     page = request.GET.get('page', 1)
@@ -297,6 +308,7 @@ def announcement_list(request):
         'min_price': min_price or '',
         'max_price': max_price or '',
         'is_negotiable_selected': is_negotiable == 'on',
+        'selected_sort': selected_sort,
         'total_count': paginator.count,
         'max_price_value': max_price_value,
         'is_htmx': is_htmx,

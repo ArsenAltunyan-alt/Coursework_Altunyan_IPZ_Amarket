@@ -20,10 +20,11 @@
             <div class="row">
 
                 <div class="col-lg-3">
-                    <form class="shop-sidebar" method="get" action="{% url 'announcement:list' %}"
+                    <form id="announcement-filters-form" class="shop-sidebar" method="get" action="{% url 'announcement:list' %}"
                         hx-get="{% url 'announcement:list' %}" hx-target="#announcement-list" hx-swap="innerHTML"
-                        hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms">
+                        hx-trigger="change delay:300ms, keyup delay:300ms from:input, categories-changed delay:1ms, sorting-changed delay:1ms">
                         <input type="hidden" name="q" value="{{ search_query }}">
+                        <input type="hidden" name="sort" id="sort-input" value="{{ selected_sort }}">
                         <button type="button"
                             class="shop-sidebar__close d-lg-none d-flex w-32 h-32 flex-center border border-gray-100 rounded-circle hover-bg-main-600 position-absolute inset-inline-end-0 me-10 mt-8 hover-text-white hover-border-main-600">
                             <i class="ph ph-x"></i>
@@ -145,9 +146,10 @@
                                 <label for="sorting" class="text-inherit flex-shrink-0">Сортувати за: </label>
                                 <select class="form-control common-input px-14 py-14 text-inherit rounded-6 w-auto"
                                     id="sorting">
-                                    <option value="1">Нові</option>
-                                    <option value="2">Ціна</option>
-                                    <option value="3">Рейтинг</option>
+                                    
+                                    <option value="popular" {% if selected_sort == 'popular' %}selected{% endif %}>За популярністю</option>
+                                    <option value="1" {% if selected_sort == '1' %}selected{% endif %}>За зростанням</option>
+                                    <option value="2" {% if selected_sort == '2' %}selected{% endif %}>За зниженням</option>
                                 </select>
                             </div>
                             <button type="button"
@@ -208,6 +210,29 @@
 <script src="{% static 'main/announcement_assets/js/count-down.js' %}"></script>
 <script src="{% static 'main/announcement_assets/js/jquery-ui.js' %}"></script>
 <script src="{% static 'main/announcement_assets/js/main.js' %}"></script>
+<script>
+    (function () {
+        var form = document.getElementById('announcement-filters-form');
+        var sorting = document.getElementById('sorting');
+        var sortInput = document.getElementById('sort-input');
+
+        if (!form || !sorting || !sortInput) return;
+
+        var currentSort = sortInput.value;
+        if (currentSort === 'popular' || currentSort === '1' || currentSort === '2') {
+            sorting.value = currentSort;
+        }
+
+        sorting.addEventListener('change', function () {
+            sortInput.value = sorting.value || '';
+            if (window.htmx) {
+                window.htmx.trigger(form, 'sorting-changed');
+            } else {
+                form.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    })();
+</script>
 <script>
     (function () {
         var toggles = document.querySelectorAll('.announcement-page .category-toggle');
