@@ -117,17 +117,10 @@
             </div>
             <div class="col-lg-4 text-center text-lg-end">
                 <div class="d-inline-flex align-items-center" style="height: 45px;">
-                    <label class="theme-toggle" for="blackThemeSwitch">
-                        <input type="checkbox" id="blackThemeSwitch">
-                        <span class="theme-toggle-track" aria-hidden="true">
-                            <span class="theme-toggle-handle" aria-hidden="true"></span>
-                        </span>
-                        <span class="theme-toggle-text"></span>
-                    </label>
+
                     {% if user.is_authenticated %}
                     <div class="dropdown">
-                        <a href="#" class="dropdown-toggle text-muted ms-2" data-bs-toggle="dropdown"><small><i
-                                    class="fa fa-user me-2"></i>{{ user.username }}</small></a>
+                        <a href="#" class="dropdown-toggle text-muted ms-2" data-bs-toggle="dropdown"><small>{% if user.profile_photo %}<img src="{{ user.profile_photo.url }}" alt="" style="width:22px;height:22px;border-radius:3px;object-fit:cover;vertical-align:middle;" class="me-2">{% else %}<i class="fa fa-user me-2"></i>{% endif %}{{ user.username }}</small></a>
                         <div class="dropdown-menu rounded">
                             <a href="{% url 'accounts:profile' %}" class="dropdown-item">Мій профіль</a>
                             <a href="{% url 'announcement:user_list' %}" class="dropdown-item">Мої оголошення</a>
@@ -275,35 +268,13 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'main/lib/easing/easing.min.js' %}"></script>
     <script src="{% static 'main/lib/wow/wow.min.js' %}"></script>
     <script src="{% static 'main/lib/owlcarousel/owl.carousel.min.js' %}"></script>
 
     <script src="{% static 'main/js/main.js' %}"></script>
 
     <script>
-        window.addEventListener('DOMContentLoaded', function () {
-            document.documentElement.classList.add('page-ready');
-        });
-    </script>
-    <script>
-        window.addEventListener('DOMContentLoaded', function () {
-            var themeSwitch = document.getElementById('blackThemeSwitch');
-            if (!themeSwitch) {
-                return;
-            }
-
-            var savedTheme = localStorage.getItem('theme');
-            var isDark = savedTheme === 'dark';
-            document.body.classList.toggle('dark', isDark);
-            themeSwitch.checked = isDark;
-
-            themeSwitch.addEventListener('change', function () {
-                var useDark = themeSwitch.checked;
-                document.body.classList.toggle('dark', useDark);
-                localStorage.setItem('theme', useDark ? 'dark' : 'light');
-            });
-        });
-
         var TxtRotate = function (el, toRotate, period) {
             this.toRotate = toRotate;
             this.el = el;
@@ -337,6 +308,8 @@
             setTimeout(this.tick.bind(this), delta);
         };
         window.addEventListener('DOMContentLoaded', function () {
+            document.documentElement.classList.add('page-ready');
+
             var elements = document.getElementsByClassName('txt-rotate');
             for (var i = 0; i < elements.length; i++) {
                 var toRotate = elements[i].getAttribute('data-rotate');
@@ -576,20 +549,8 @@
     </script>
     <script>
         (function () {
-            var form = document.getElementById('header-search-form');
-            var input = document.getElementById('header-search-input');
-            var box = document.getElementById('header-search-suggestions');
-            if (!form || !input || !box) return;
-
-            var timer = null;
-            var activeController = null;
             var endpoint = "{% url 'announcement:search_suggestions' %}";
             var fallbackImage = "{% static 'main/announcement_assets/img/without_photo.png' %}";
-
-            function hideBox() {
-                box.classList.add('d-none-force');
-                box.innerHTML = '';
-            }
 
             function escapeHtml(text) {
                 return String(text)
@@ -600,63 +561,84 @@
                     .replace(/'/g, '&#039;');
             }
 
-            function renderItems(items) {
-                if (!items.length) {
-                    box.innerHTML = '<div class="search-suggest-empty">На жаль, нічого не знайдено</div>';
+            function initSearchSuggestions(form, input, box) {
+                if (!form || !input || !box) return;
+
+                var timer = null;
+                var activeController = null;
+
+                function hideBox() {
+                    box.classList.add('d-none-force');
+                    box.innerHTML = '';
+                }
+
+                function renderItems(items) {
+                    if (!items.length) {
+                        box.innerHTML = '<div class="search-suggest-empty">На жаль, нічого не знайдено</div>';
+                        box.classList.remove('d-none-force');
+                        return;
+                    }
+
+                    box.innerHTML = items.map(function (item) {
+                        var imageUrl = item.image_url || fallbackImage;
+                        return '<a class="search-suggest-item" href="' + item.url + '">' +
+                            '<img class="search-suggest-thumb" src="' + escapeHtml(imageUrl) + '" alt="">' +
+                            '<span class="search-suggest-title">' + escapeHtml(item.title) + '</span>' +
+                            '</a>';
+                    }).join('');
                     box.classList.remove('d-none-force');
-                    return;
                 }
 
-                box.innerHTML = items.map(function (item) {
-                    var imageUrl = item.image_url || fallbackImage;
-                    return '<a class="search-suggest-item" href="' + item.url + '">' +
-                        '<img class="search-suggest-thumb" src="' + imageUrl + '" alt="">' +
-                        '<span class="search-suggest-title">' + escapeHtml(item.title) + '</span>' +
-                        '</a>';
-                }).join('');
-                box.classList.remove('d-none-force');
-            }
+                function fetchSuggestions(query) {
+                    if (activeController) {
+                        activeController.abort();
+                    }
+                    activeController = new AbortController();
 
-            function fetchSuggestions(query) {
-                if (activeController) {
-                    activeController.abort();
+                    fetch(endpoint + '?q=' + encodeURIComponent(query), {
+                        signal: activeController.signal,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
+                    })
+                        .then(function (response) {
+                            if (!response.ok) throw new Error('Request failed');
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            renderItems(data.items || []);
+                        })
+                        .catch(function (error) {
+                            if (error.name === 'AbortError') return;
+                            hideBox();
+                        });
                 }
-                activeController = new AbortController();
 
-                fetch(endpoint + '?q=' + encodeURIComponent(query), {
-                    signal: activeController.signal,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    credentials: 'same-origin'
-                })
-                    .then(function (response) {
-                        if (!response.ok) throw new Error('Request failed');
-                        return response.json();
-                    })
-                    .then(function (data) {
-                        renderItems(data.items || []);
-                    })
-                    .catch(function (error) {
-                        if (error.name === 'AbortError') return;
+                input.addEventListener('input', function () {
+                    var query = input.value.trim();
+                    if (timer) clearTimeout(timer);
+                    if (query.length < 2) {
                         hideBox();
-                    });
+                        return;
+                    }
+                    timer = setTimeout(function () {
+                        fetchSuggestions(query);
+                    }, 220);
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!box.contains(event.target) && event.target !== input) {
+                        hideBox();
+                    }
+                });
             }
 
-            input.addEventListener('input', function () {
-                var query = input.value.trim();
-                if (timer) clearTimeout(timer);
-                if (query.length < 2) {
-                    hideBox();
-                    return;
-                }
-                timer = setTimeout(function () {
-                    fetchSuggestions(query);
-                }, 220);
-            });
-
-            document.addEventListener('click', function (event) {
-                if (!box.contains(event.target) && event.target !== input) {
-                    hideBox();
-                }
+            /* Initialize for all search forms (desktop + mobile) */
+            var forms = document.querySelectorAll('.js-header-search-form');
+            forms.forEach(function (form) {
+                var host = form.closest('.search-suggest-host');
+                var input = form.querySelector('.js-header-search-input');
+                var box = host ? host.querySelector('.js-header-search-suggestions') : null;
+                initSearchSuggestions(form, input, box);
             });
         })();
     </script>

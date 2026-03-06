@@ -155,14 +155,21 @@
 
 
     // Back to top button
+    var $backToTop = $('.back-to-top');
+    var backToTopVisible = false;
     $(window).scroll(function () {
-        if ($(this).scrollTop() > 300) {
-            $('.back-to-top').fadeIn('slow');
-        } else {
-            $('.back-to-top').fadeOut('slow');
+        var shouldShow = $(this).scrollTop() > 300;
+        if (shouldShow && !backToTopVisible) {
+            backToTopVisible = true;
+            $backToTop.stop(true, true).css({ display: 'flex', opacity: 0 }).animate({ opacity: 1 }, 400);
+        } else if (!shouldShow && backToTopVisible) {
+            backToTopVisible = false;
+            $backToTop.stop(true, true).animate({ opacity: 0 }, 400, function () {
+                $(this).css('display', 'none');
+            });
         }
     });
-    $('.back-to-top').click(function () {
+    $backToTop.click(function () {
         $('html, body').animate({ scrollTop: 0 }, 1500, 'easeInOutExpo');
         return false;
     });
