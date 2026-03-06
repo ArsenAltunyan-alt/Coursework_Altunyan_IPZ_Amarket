@@ -70,6 +70,22 @@
         color: #c62828;
     }
 
+    /* Responsive adjustments for mobile */
+    @media (max-width: 991.98px) {
+        #map {
+            height: 350px !important;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .contact .p-5 {
+            padding: 1rem !important;
+        }
+        .contact .display-5 {
+            font-size: 1.75rem;
+        }
+    }
+
 </style>
 {% endblock %}
 
@@ -176,6 +192,9 @@
                                     точку на карті</div>
                             </div>
 
+                            <!-- Mobile map slot (shown below address on small screens) -->
+                            <div id="map-mobile-slot" class="col-12 d-lg-none"></div>
+
                             <!-- Description -->
                             <div class="col-12">
                                 <div class="form-floating">
@@ -221,7 +240,7 @@
                 </div>
 
                 <!-- Right Column: Map -->
-                <div class="col-lg-5 wow fadeInUp" data-wow-delay="0.2s">
+                <div class="col-lg-5 wow fadeInUp" data-wow-delay="0.2s" id="map-desktop-wrapper">
                     <div class="h-100 rounded bg-white p-1 border">
                         <!-- Helper text for map -->
                         <div class="alert alert-info py-2 small mb-1">
@@ -597,6 +616,31 @@
                     })
                     .catch(error => console.error('Помилка пошуку адреси:', error));
             });
+        }
+
+        // Responsive map placement: move map below address on mobile
+        const mapDesktopWrapper = document.getElementById('map-desktop-wrapper');
+        const mapMobileSlot = document.getElementById('map-mobile-slot');
+
+        if (mapDesktopWrapper && mapMobileSlot) {
+            const mapInnerContainer = mapDesktopWrapper.querySelector('.h-100');
+
+            const handleMapPlacement = () => {
+                if (window.innerWidth < 992) {
+                    if (!mapMobileSlot.contains(mapInnerContainer)) {
+                        mapMobileSlot.appendChild(mapInnerContainer);
+                        map.invalidateSize();
+                    }
+                } else {
+                    if (!mapDesktopWrapper.contains(mapInnerContainer)) {
+                        mapDesktopWrapper.appendChild(mapInnerContainer);
+                        map.invalidateSize();
+                    }
+                }
+            };
+
+            handleMapPlacement();
+            window.addEventListener('resize', handleMapPlacement);
         }
     });
 </script>
