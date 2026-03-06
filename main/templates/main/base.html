@@ -44,7 +44,7 @@
         .search-suggest-box {
             position: absolute;
             top: calc(100% + 8px);
-            left: 1.5rem;
+            left: 0;
             right: 0;
             background: #fff;
             border: 1px solid #e9ecef;
@@ -84,6 +84,9 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .search-suggest-host {
+            position: relative;
         }
         .d-none-force {
             display: none !important;
@@ -157,16 +160,16 @@
                 </div>
             </div>
             <div class="col-md-4 col-lg-6 text-center">
-                <div class="position-relative ps-4">
-                    <form id="header-search-form" class="d-flex border rounded-pill" method="get"
+                <div class="search-suggest-host ps-4">
+                    <form id="header-search-form" class="d-flex border rounded-pill js-header-search-form" method="get"
                         action="{% url 'announcement:list' %}" autocomplete="off">
-                        <input id="header-search-input" class="form-control border-0 rounded-pill w-100 py-3"
+                        <input id="header-search-input" class="form-control border-0 rounded-pill w-100 py-3 js-header-search-input"
                             type="text" name="q" value="{{ request.GET.q|default:'' }}"
                             placeholder="Що шукаєте?">
                         <button type="submit" class="btn btn-primary rounded-pill py-3 px-5" style="border: 0;"><i
                                 class="fas fa-search"></i></button>
                     </form>
-                    <div id="header-search-suggestions" class="search-suggest-box d-none-force"></div>
+                    <div id="header-search-suggestions" class="search-suggest-box d-none-force js-header-search-suggestions"></div>
                 </div>
             </div>
             <div class="col-md-4 col-lg-3 text-center text-lg-end">
@@ -189,16 +192,13 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="container-fluid nav-bar p-0">
-        <div class="row gx-0 bg-primary px-5 align-items-center">
+    </div>    <div class="container-fluid nav-bar p-0">
+        <div class="row gx-0 bg-primary px-3 px-lg-5 align-items-center">
             <div class="col-lg-3 d-none d-lg-block"></div>
             <div class="col-12 col-lg-9">
                 <nav class="navbar navbar-expand-lg navbar-light bg-primary ">
                     <a href="{% url 'home' %}" class="navbar-brand d-block d-lg-none">
-                        <h1 class="display-5 text-secondary m-0"><i
-                                class="fas fa-shopping-bag text-white me-2"></i>Amarket</h1>
+                        <h1 class="display-5 m-0"><i class="fas fa-user-friends text-secondary me-2"></i><span class="text-white">Amarket</span></h1>
                     </a>
                     <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse"
                         data-bs-target="#navbarCollapse">
@@ -210,13 +210,35 @@
                                 class="nav-item nav-link {% if request.path == '/' %}active{% endif %}">Головна</a>
                             <a href="{% url 'announcement:list' %}"
                                 class="nav-item nav-link me-2 {% if '/announcement/list/' in request.path and 'user' not in request.path %}active{% endif %}">Оголошення</a>
+                            {% if user.is_authenticated %}
+                            <a href="{% url 'accounts:profile' %}" class="nav-item nav-link d-lg-none">Мій профіль</a>
+                            <a href="{% url 'announcement:user_list' %}" class="nav-item nav-link d-lg-none">Мої оголошення</a>
+                            <a href="{% url 'accounts:logout' %}" class="nav-item nav-link d-lg-none">Вийти</a>
+                            {% else %}
+                            <a href="{% url 'accounts:login' %}" class="nav-item nav-link d-lg-none">Login</a>
+                            <a href="{% url 'accounts:register_step1' %}" class="nav-item nav-link d-lg-none">Register</a>
+                            {% endif %}
                         </div>
                         <a href="{% url 'announcement:create' %}"
                             class="btn btn-secondary rounded-pill py-2 px-4 px-lg-3 mb-3 mb-md-3 mb-lg-0"><i
-                                class="	fa fa-cart-plus me-2"></i>Створити оголошення</a>
+                                class="fa fa-cart-plus me-2"></i>Створити оголошення</a>
                     </div>
                 </nav>
             </div>
+        </div>
+    </div>
+    <div class="container-fluid d-lg-none bg-white border-bottom py-2 px-3">
+        <div class="search-suggest-host">
+            <form id="mobile-header-search-form" class="d-flex border rounded-pill js-header-search-form" method="get"
+                action="{% url 'announcement:list' %}" autocomplete="off">
+                <input id="mobile-header-search-input" class="form-control border-0 rounded-pill w-100 py-2 js-header-search-input"
+                    type="text" name="q" value="{{ request.GET.q|default:'' }}"
+                    placeholder="Що шукаєте?">
+                <button type="submit" class="btn btn-primary rounded-pill px-4" style="border: 0;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+            <div id="mobile-header-search-suggestions" class="search-suggest-box d-none-force js-header-search-suggestions"></div>
         </div>
     </div>
 
@@ -642,6 +664,8 @@
 </body>
 
 </html>
+
+
 
 
 
