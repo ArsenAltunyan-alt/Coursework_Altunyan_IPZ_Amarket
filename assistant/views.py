@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 from announcement.models import Announcement, Category
 
 
-def _call_openrouter(messages, temperature=0.4, max_tokens=300):
+def _call_openrouter(messages, temperature=0.4, max_tokens=400):
     api_key = settings.OPENROUTER_API_KEY
     if not api_key:
         raise RuntimeError("OPENROUTER_API_KEY is not configured.")
@@ -80,6 +80,25 @@ def _build_category_filter(slugs):
     return category_filter
 
 
+def _has_any_filter(filters):
+    """Return True when *filters* contain at least one meaningful criterion."""
+    if not filters:
+        return False
+    if filters.get("category_slugs"):
+        return True
+    if filters.get("keywords"):
+        return True
+    if filters.get("budget_min") is not None or filters.get("budget_max") is not None:
+        return True
+    if filters.get("condition") in {"new", "used"}:
+        return True
+    if filters.get("is_negotiable") is True:
+        return True
+    if filters.get("location"):
+        return True
+    return False
+
+
 def _search_announcements(filters):
     qs = Announcement.objects.filter(is_active=True)
 
@@ -127,6 +146,51 @@ def _serialize_announcement(request, announcement):
     }
 
 
+_SYSTEM_PROMPT_TEMPLATE = (
+    "Ти — AI-помічник маркетплейсу Amarket. Твоє завдання — допомогти "
+    "користувачу знайти потрібний товар. Відповідай ВИКЛЮЧНО валідним JSON "
+    "без будь-яких пояснень, коментарів чи markdown.\n\n"
+    "Формат відповіді:\n"
+    "{{\n"
+    '  "should_search": true | false,\n'
+    '  "reply": "текст відповіді українською",\n'
+    '  "questions": ["уточнюючі питання, якщо потрібно"],\n'
+    '  "filters": {{\n'
+    '    "category_slugs": [],\n'
+    '    "keywords": [],\n'
+    '    "budget_min": null,\n'
+    '    "budget_max": null,\n'
+    '    "condition": null,\n'
+    '    "is_negotiable": null,\n'
+    '    "location": null\n'
+    "  }}\n"
+    "}}\n\n"
+    "ПРАВИЛА:\n"
+    '1. "should_search" — встанови TRUE лише коли у тебе є ДОСТАТНЬО інформації '
+    "для конкретного пошуку (є категорія, ключові слова або ціновий діапазон). "
+    "Якщо користувач вітається, дякує, ставить загальне питання або ще не дав "
+    "достатньо деталей — встанови FALSE.\n"
+    '2. "questions" — задавай уточнюючі питання коли потрібно більше деталей '
+    "(бюджет, стан, категорія тощо). НЕ шукай коли питаєш.\n"
+    '3. "filters" — заповнюй ТІЛЬКИ ті поля, які чітко зрозумілі з контексту. '
+    "НЕ вигадуй фільтри.\n"
+    '4. "reply" — відповідай дружньо та стисло українською.\n'
+    "5. Використовуй тільки наявні slug категорій.\n\n"
+    "Приклади:\n"
+    'Користувач: "Привіт"\n'
+    '{{"should_search": false, "reply": "Привіт! Я ваш AI-помічник. Що шукаєте?", '
+    '"questions": [], "filters": {{}}}}\n\n'
+    'Користувач: "Хочу подарунок батькові"\n'
+    '{{"should_search": false, "reply": "Гарна ідея! Допоможу з вибором.", '
+    '"questions": ["Який бюджет?", "Які у нього інтереси?"], "filters": {{}}}}\n\n'
+    'Користувач: "Ноутбук до 15000 грн"\n'
+    '{{"should_search": true, "reply": "Ось ноутбуки до 15000 грн:", '
+    '"questions": [], "filters": {{"category_slugs": ["noutbuky"], '
+    '"keywords": ["ноутбук"], "budget_max": 15000}}}}\n\n'
+    "Категорії: {category_hint}\n"
+)
+
+
 @require_POST
 def assistant_message(request):
     try:
@@ -144,29 +208,7 @@ def assistant_message(request):
     history = request.session.get("assistant_history", [])
     history = history[-6:]
 
-    system_prompt = (
-        "Ти AI-помічник маркетплейсу. Перетвори повідомлення у JSON.\n"
-        "Відповідай ТІЛЬКИ JSON без пояснень.\n"
-        "Формат:\n"
-        "{\n"
-        '  "reply": "рядок",\n'
-        '  "questions": ["рядок"],\n'
-        '  "filters": {\n'
-        '    "category_slugs": [],\n'
-        '    "keywords": [],\n'
-        '    "budget_min": null,\n'
-        '    "budget_max": null,\n'
-        '    "condition": null,\n'
-        '    "is_negotiable": null,\n'
-        '    "location": null,\n'
-        '    "recipient": null,\n'
-        '    "occasion": null,\n'
-        '    "gender": null\n'
-        "  }\n"
-        "}\n"
-        "Використовуй наявні категорії (slug) коли можливо.\n"
-        f"Категорії: {category_hint}\n"
-    )
+    system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(category_hint=category_hint)
 
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history)
@@ -178,27 +220,27 @@ def assistant_message(request):
     except Exception as exc:
         return JsonResponse({"error": "AI service request failed.", "details": str(exc)}, status=502)
 
-    reply = parsed.get("reply") or "Ось кілька варіантів, які можуть підійти."
+    reply = parsed.get("reply") or "Чим можу допомогти?"
     questions = parsed.get("questions") or []
     filters = parsed.get("filters") or {}
+    should_search = parsed.get("should_search", False)
 
-    qs = _search_announcements(filters)
-    items = [_serialize_announcement(request, a) for a in qs[:6]]
-    total = qs.count()
+    items = []
+    total = 0
+
+    if should_search and _has_any_filter(filters):
+        qs = _search_announcements(filters)
+        items = [_serialize_announcement(request, a) for a in qs[:6]]
+        total = qs.count()
+
+        if total == 0:
+            reply = "На жаль, зараз на сайті немає оголошень за таким запитом."
+            questions = []
 
     history.append({"role": "user", "content": message})
     history.append({"role": "assistant", "content": reply})
     request.session["assistant_history"] = history[-10:]
     request.session.modified = True
-
-    if total == 0:
-        return JsonResponse({
-            "reply": "На жаль, зараз на сайті немає оголошень за таким запитом.",
-            "questions": [],
-            "filters": filters,
-            "items": [],
-            "total": 0,
-        })
 
     return JsonResponse({
         "reply": reply,
