@@ -91,6 +91,28 @@
         .d-none-force {
             display: none !important;
         }
+        .icon-badge-wrap {
+            position: relative;
+            display: inline-flex;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 18px;
+            text-align: center;
+            color: #fff;
+            background: #e74c3c;
+            border-radius: 999px;
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.4);
+            pointer-events: none;
+            z-index: 2;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -170,7 +192,7 @@
                     {% if user.is_authenticated %}
                     <a href="{% url 'chat:index' %}"
                         class="text-muted d-flex align-items-center justify-content-center me-3"><span
-                            class="rounded-circle btn-md-square border"><i class="fas fa-comment"></i></span></a>
+                            class="rounded-circle btn-md-square border icon-badge-wrap"><i class="fas fa-comment"></i><span id="chat-badge" class="notification-badge" style="display:none;"></span></span></a>
                     <a href="{% url 'announcement:favorites' %}"
                         class="text-muted d-flex align-items-center justify-content-center me-3"><span
                             class="rounded-circle btn-md-square border"><i class="fas fa-heart"></i></span></a>
@@ -642,6 +664,34 @@
             });
         })();
     </script>
+    {% if user.is_authenticated %}
+    <script>
+        (function () {
+            var badge = document.getElementById('chat-badge');
+            if (!badge) return;
+            var endpoint = '{% url "chat:unread_count" %}';
+            function refresh() {
+                fetch(endpoint, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var count = data.unread_count || 0;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = '';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(function () {});
+            }
+            refresh();
+            setInterval(refresh, 10000);
+        })();
+    </script>
+    {% endif %}
     {% block extra_js %}{% endblock %}
 </body>
 

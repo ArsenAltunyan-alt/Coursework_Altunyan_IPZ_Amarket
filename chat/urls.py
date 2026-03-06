@@ -10,4 +10,5 @@ urlpatterns = [
      path('chat/<str:room_name>/', views.chat_room, name='room'),
      path('chat/<str:room_name>/send-image/', views.send_image, name='send_image'),
      path('chat/<str:room_name>/delete/', views.delete_chat, name='delete'),
+     path('unread-count/', views.unread_count, name='unread_count'),
 ]

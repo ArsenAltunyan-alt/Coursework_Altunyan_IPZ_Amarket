@@ -245,3 +245,9 @@ def send_image(request, room_name):
         "message_id": new_message.id,
         "image_url": new_message.image.url if new_message.image else "",
     })
+
+
+@login_required
+def unread_count(request):
+    count = Message.objects.filter(receiver=request.user, is_read=False).count()
+    return JsonResponse({"unread_count": count})

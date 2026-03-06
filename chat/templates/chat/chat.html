@@ -2,7 +2,7 @@
 
 {% block title %}Повідомлення{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
     .chat-shell {
         background: #f6f8fb;
@@ -174,9 +174,6 @@
         background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23f28c28' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-8.49 8.49a5 5 0 01-7.07-7.07l8.49-8.49a3.5 3.5 0 014.95 4.95l-8.5 8.49a2 2 0 11-2.83-2.83l7.78-7.78'/%3E%3C/svg%3E");
     }
 </style>
-{% endblock %}
-
-{% block content %}
 <div class="container-fluid py-5">
     <div class="container" id="chat-page" data-current-username="{{ request.user.username }}">
         <div class="chat-shell">
@@ -213,6 +210,10 @@
 {% block extra_js %}
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script>
+    htmx.config.refreshOnHistoryMiss = true;
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) { window.location.reload(); }
+    });
     function initChatPanel() {
         const page = document.querySelector("#chat-page");
         const currentUsername = page ? page.dataset.currentUsername : "";
