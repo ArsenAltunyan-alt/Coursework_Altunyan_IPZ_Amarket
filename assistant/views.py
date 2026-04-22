@@ -1,4 +1,4 @@
-import json
+﻿import json
 from json import JSONDecodeError
 
 import requests
@@ -81,7 +81,6 @@ def _build_category_filter(slugs):
 
 
 def _has_any_filter(filters):
-    """Return True when *filters* contain at least one meaningful criterion."""
     if not filters:
         return False
     if filters.get("category_slugs"):
@@ -130,10 +129,68 @@ def _search_announcements(filters):
             keyword_q |= Q(title__icontains=kw) | Q(description__icontains=kw)
         qs = qs.filter(keyword_q)
 
-    return qs.order_by("-created_at")
+    # БЕЗ order_by — сортування буде після reranking
+    return qs
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# НОВЕ: Reranking
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _score_announcement(announcement, keywords):
+    """
+    Підраховує скор релевантності оголошення до набору ключових слів.
+
+    Логіка скорингу:
+      +3 — точний збіг ключового слова у заголовку (найважливіше поле)
+      +1 — збіг у описі
+      +0.5 — збіг як підрядок (часткове співпадіння)
+
+    Повертає float — чим більше, тим релевантніше.
+    """
+    if not keywords:
+        return 0.0
+
+    title = (announcement.title or "").lower()
+    description = (announcement.description or "").lower()
+    score = 0.0
+
+    for kw in keywords:
+        kw_lower = kw.lower()
+        # точний збіг слова у заголовку
+        if f" {kw_lower} " in f" {title} ":
+            score += 3.0
+        # підрядок у заголовку
+        elif kw_lower in title:
+            score += 0.5
+        # збіг у описі
+        if kw_lower in description:
+            score += 1.0
+
+    return score
+
+
+def _rerank(announcements, keywords, top_k=6):
+    """
+    Сортує список оголошень за скором релевантності (спадно).
+    Оголошення з однаковим скором сортуються за датою створення (новіші вище).
+    Повертає перші top_k результатів.
+    """
+    scored = [
+        (ann, _score_announcement(ann, keywords))
+        for ann in announcements
+    ]
+    # сортування: спочатку за скором (спадно), потім за датою (спадно)
+    scored.sort(key=lambda x: (x[1], x[0].created_at.timestamp()), reverse=True)
+    return [ann for ann, _ in scored[:top_k]]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# НОВЕ: RAG — серіалізація з повним контекстом для LLM
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _serialize_announcement(request, announcement):
+    """Серіалізація для відповіді API (повертається на фронтенд)."""
     image = announcement.get_main_image()
     return {
         "id": announcement.id,
@@ -145,6 +202,84 @@ def _serialize_announcement(request, announcement):
         "image": request.build_absolute_uri(image.url) if image else None,
     }
 
+
+def _serialize_for_rag(announcement):
+    """
+    Серіалізація для RAG-контексту (передається до LLM).
+    Включає більше полів ніж _serialize_announcement — LLM потребує
+    змістовного тексту, а не URL та зображень.
+    """
+    condition_map = {"new": "новий", "used": "вживаний"}
+    return {
+        "title": announcement.title,
+        "price": str(announcement.price) if announcement.price is not None else "не вказана",
+        "condition": condition_map.get(announcement.condition, "не вказано"),
+        "is_negotiable": "торг можливий" if announcement.is_negotiable else "без торгу",
+        "location": announcement.address or "не вказано",
+        "description": (announcement.description or "")[:400],
+    }
+
+
+def _build_rag_context(announcements):
+    """
+    Формує текстовий контекст із знайдених оголошень для передачі до LLM.
+    Це і є 'retrieved documents' у термінах RAG.
+    """
+    lines = []
+    for i, ann in enumerate(announcements, start=1):
+        d = _serialize_for_rag(ann)
+        line = (
+            f"{i}. {d['title']} | "
+            f"Ціна: {d['price']} грн ({d['is_negotiable']}) | "
+            f"Стан: {d['condition']} | "
+            f"Локація: {d['location']}"
+        )
+        if d["description"]:
+            line += f"\n   Опис: {d['description']}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+# ── RAG system prompt ─────────────────────────────────────────────────────────
+
+_RAG_SYSTEM_PROMPT = (
+    "Ти — AI-помічник маркетплейсу Amarket. "
+    "Тобі надано запит користувача та список реальних оголошень із бази даних. "
+    "Твоє завдання — на основі ТІЛЬКИ наданих оголошень сформулювати корисну "
+    "відповідь українською мовою.\n\n"
+    "ПРАВИЛА:\n"
+    "1. Використовуй ТІЛЬКИ надані оголошення — нічого не вигадуй.\n"
+    "2. Якщо є кілька варіантів — коротко порівняй або виділи найкращий.\n"
+    "3. Якщо оголошення не відповідають запиту — чесно скажи про це.\n"
+    "4. Відповідай стисло та дружньо, без зайвих вступів.\n"
+    "5. Не повторюй список дослівно — зроби корисний висновок для користувача.\n"
+)
+
+
+def _rag_generate_reply(user_message, announcements, history):
+    """
+    Етап 2 RAG: Augmented Generation.
+    LLM отримує знайдені оголошення як grounded context і генерує відповідь.
+    """
+    context = _build_rag_context(announcements)
+
+    rag_messages = [{"role": "system", "content": _RAG_SYSTEM_PROMPT}]
+    # передаємо останні 4 повідомлення для контекстності діалогу
+    rag_messages.extend(history[-4:])
+    rag_messages.append({
+        "role": "user",
+        "content": (
+            f"Запит: {user_message}\n\n"
+            f"Знайдені оголошення ({len(announcements)}):\n{context}"
+        ),
+    })
+
+    return _call_openrouter(rag_messages, temperature=0.5, max_tokens=350)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 1 prompt — без змін
+# ══════════════════════════════════════════════════════════════════════════════
 
 _SYSTEM_PROMPT_TEMPLATE = (
     "Ти — AI-помічник маркетплейсу Amarket. Твоє завдання — допомогти "
@@ -199,6 +334,10 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Головний view — змінився блок після пошуку в БД
+# ══════════════════════════════════════════════════════════════════════════════
+
 @require_POST
 def assistant_message(request):
     try:
@@ -216,8 +355,8 @@ def assistant_message(request):
     history = request.session.get("assistant_history", [])
     history = history[-6:]
 
+    # ── Етап 1: Intent detection + Slot filling (без змін) ───────────────────
     system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(category_hint=category_hint)
-
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history)
     messages.append({"role": "user", "content": message})
@@ -237,14 +376,33 @@ def assistant_message(request):
     total = 0
 
     if should_search and _has_any_filter(filters):
+
+        # ── Retrieval: пошук у БД ─────────────────────────────────────────────
         qs = _search_announcements(filters)
-        items = [_serialize_announcement(request, a) for a in qs[:6]]
         total = qs.count()
 
         if total == 0:
             reply = "На жаль, зараз на сайті немає оголошень за таким запитом."
             questions = []
 
+        else:
+            # ── НОВЕ: Reranking за релевантністю ─────────────────────────────
+            keywords = [kw for kw in (filters.get("keywords") or []) if kw]
+            # беремо більше ніж потрібно, щоб reranking мав з чого вибирати
+            candidates = list(qs[:30])
+            reranked = _rerank(candidates, keywords, top_k=6)
+
+            # серіалізуємо для фронтенду
+            items = [_serialize_announcement(request, ann) for ann in reranked]
+
+            # ── НОВЕ: Augmented Generation (RAG) ─────────────────────────────
+            try:
+                reply = _rag_generate_reply(message, reranked, history)
+            except Exception:
+                # graceful degradation — якщо RAG впав, лишаємо reply з етапу 1
+                pass
+
+    # зберігаємо історію діалогу
     history.append({"role": "user", "content": message})
     history.append({"role": "assistant", "content": reply})
     request.session["assistant_history"] = history[-10:]
