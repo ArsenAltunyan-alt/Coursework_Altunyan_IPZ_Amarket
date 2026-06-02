@@ -129,25 +129,12 @@ def _search_announcements(filters):
             keyword_q |= Q(title__icontains=kw) | Q(description__icontains=kw)
         qs = qs.filter(keyword_q)
 
-    # БЕЗ order_by — сортування буде після reranking
     return qs
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# НОВЕ: Reranking
-# ══════════════════════════════════════════════════════════════════════════════
+# Reranking
 
 def _score_announcement(announcement, keywords):
-    """
-    Підраховує скор релевантності оголошення до набору ключових слів.
-
-    Логіка скорингу:
-      +3 — точний збіг ключового слова у заголовку (найважливіше поле)
-      +1 — збіг у описі
-      +0.5 — збіг як підрядок (часткове співпадіння)
-
-    Повертає float — чим більше, тим релевантніше.
-    """
     if not keywords:
         return 0.0
 
@@ -157,13 +144,10 @@ def _score_announcement(announcement, keywords):
 
     for kw in keywords:
         kw_lower = kw.lower()
-        # точний збіг слова у заголовку
         if f" {kw_lower} " in f" {title} ":
             score += 3.0
-        # підрядок у заголовку
         elif kw_lower in title:
             score += 0.5
-        # збіг у описі
         if kw_lower in description:
             score += 1.0
 
@@ -185,9 +169,8 @@ def _rerank(announcements, keywords, top_k=6):
     return [ann for ann, _ in scored[:top_k]]
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# НОВЕ: RAG — серіалізація з повним контекстом для LLM
-# ══════════════════════════════════════════════════════════════════════════════
+# RAG
+
 
 def _serialize_announcement(request, announcement):
     """Серіалізація для відповіді API (повертається на фронтенд)."""
@@ -334,10 +317,6 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Головний view — змінився блок після пошуку в БД
-# ══════════════════════════════════════════════════════════════════════════════
-
 @require_POST
 def assistant_message(request):
     try:
@@ -377,7 +356,6 @@ def assistant_message(request):
 
     if should_search and _has_any_filter(filters):
 
-        # ── Retrieval: пошук у БД ─────────────────────────────────────────────
         qs = _search_announcements(filters)
         total = qs.count()
 
@@ -386,23 +364,17 @@ def assistant_message(request):
             questions = []
 
         else:
-            # ── НОВЕ: Reranking за релевантністю ─────────────────────────────
             keywords = [kw for kw in (filters.get("keywords") or []) if kw]
-            # беремо більше ніж потрібно, щоб reranking мав з чого вибирати
             candidates = list(qs[:30])
             reranked = _rerank(candidates, keywords, top_k=6)
 
-            # серіалізуємо для фронтенду
             items = [_serialize_announcement(request, ann) for ann in reranked]
 
-            # ── НОВЕ: Augmented Generation (RAG) ─────────────────────────────
             try:
                 reply = _rag_generate_reply(message, reranked, history)
             except Exception:
-                # graceful degradation — якщо RAG впав, лишаємо reply з етапу 1
                 pass
 
-    # зберігаємо історію діалогу
     history.append({"role": "user", "content": message})
     history.append({"role": "assistant", "content": reply})
     request.session["assistant_history"] = history[-10:]
